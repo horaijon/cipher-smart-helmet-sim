@@ -1,0 +1,2129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIPHER — Cognitive Ignition & Proximity Helmet for Enhanced Rider Safety</title>
+<meta name="description" content="CIPHER: A software simulation of an autonomous smart-helmet rider-safety system.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fustat:wght@400;500;600;700;800&family=Schibsted+Grotesk:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<style>
+/* ============================================
+   CSS DESIGN SYSTEM — CIPHER
+   ============================================ */
+:root {
+  --bg-primary: #030408;
+  --bg-secondary: #080a14;
+  --bg-card: rgba(8, 10, 20, 0.45);
+  --bg-glass: rgba(5, 7, 15, 0.35);
+  --border-glass: rgba(0, 229, 255, 0.08);
+  --border-glow: rgba(0, 229, 255, 0.25);
+  --cyan: #00e5ff;
+  --cyan-dim: #00b8d4;
+  --blue: #0077ff;
+  --blue-glow: rgba(0, 119, 255, 0.4);
+  --neon-green: #00ff88;
+  --neon-pink: #ff3366;
+  --neon-yellow: #ffd600;
+  --neon-orange: #ff6600;
+  --text-primary: #e8eaf6;
+  --text-secondary: #9ea8c8;
+  --text-dim: #5a6490;
+  --font-display: 'Orbitron', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --glass-blur: blur(24px);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 16px;
+  --glow-cyan: 0 0 20px rgba(0,229,255,0.2), 0 0 50px rgba(0,229,255,0.06);
+  --glow-cyan-intense: 0 0 15px rgba(0,229,255,0.4), 0 0 40px rgba(0,229,255,0.15);
+  --glow-pink: 0 0 20px rgba(255,51,102,0.3), 0 0 50px rgba(255,51,102,0.1);
+  --glow-green: 0 0 20px rgba(0,255,136,0.25), 0 0 50px rgba(0,255,136,0.08);
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(0,119,255,0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 100%, rgba(0,229,255,0.05) 0%, transparent 50%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ---- LOADING SCREEN ---- */
+.loading-screen {
+  position: fixed; inset: 0;
+  background: var(--bg-primary);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 10000;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+.loading-screen.hidden {
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+.loading-helmet-icon {
+  width: 80px; height: 80px;
+  margin-bottom: 28px;
+  animation: loadPulse 1.5s ease-in-out infinite;
+}
+.loading-helmet-icon svg { width: 100%; height: 100%; }
+.loading-text {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  color: var(--cyan);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(0,229,255,0.4);
+}
+.loading-bar-track {
+  width: 200px; height: 3px;
+  background: rgba(0,229,255,0.1);
+  border-radius: 2px;
+  margin-top: 20px;
+  overflow: hidden;
+}
+.loading-bar-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--cyan), var(--blue));
+  border-radius: 2px;
+  animation: loadBar 2.2s ease-out forwards;
+}
+@keyframes loadPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(0,229,255,0.4)); }
+  50% { transform: scale(1.08); filter: drop-shadow(0 0 25px rgba(0,229,255,0.7)); }
+}
+@keyframes loadBar {
+  0% { width: 0%; }
+  60% { width: 70%; }
+  100% { width: 100%; }
+}
+
+/* ---- NAVIGATION ---- */
+.top-nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 64px;
+  background: rgba(6,6,18,0.88);
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--border-glass);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px;
+  z-index: 1000;
+}
+.nav-logo {
+  font-family: 'Schibsted Grotesk', sans-serif; font-size: 1.5rem; font-weight: 700;
+  color: #ffffff; letter-spacing: -0.5px; text-decoration: none;
+}
+.nav-links { display: flex; gap: 8px; }
+.nav-link {
+  font-family: 'Schibsted Grotesk', sans-serif; font-size: 1rem; font-weight: 500;
+  color: rgba(255,255,255,0.8); text-decoration: none;
+  padding: 8px 18px; border-radius: var(--radius-sm);
+  transition: var(--transition); letter-spacing: -0.2px;
+  cursor: pointer; border: 1px solid transparent;
+}
+.nav-link:hover { color: #ffffff; background: rgba(255,255,255,0.06); }
+.nav-link.active {
+  color: #ffffff; background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.2); text-shadow: none;
+}
+.nav-mobile-btn {
+  display: none; background: none; border: none;
+  color: var(--cyan); font-size: 1.5rem; cursor: pointer; padding: 4px;
+}
+
+/* ---- PAGES ---- */
+.page { display: none; position: relative; z-index: 1; padding-top: 64px; min-height: 100vh; }
+.page.active { display: block; }
+
+/* ---- COMMON COMPONENTS ---- */
+.glass-panel {
+  background: var(--bg-glass);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.glass-panel:hover { border-color: var(--border-glow); }
+.section-title {
+  font-family: var(--font-display); font-size: 1.1rem;
+  color: var(--cyan); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 20px; text-shadow: 0 0 15px rgba(0,229,255,0.3);
+}
+.btn-primary {
+  font-family: var(--font-display); font-size: 0.85rem; font-weight: 600;
+  padding: 14px 36px; border: 1px solid var(--cyan);
+  background: rgba(0,229,255,0.1); color: var(--cyan);
+  border-radius: var(--radius-sm); cursor: pointer;
+  letter-spacing: 2px; text-transform: uppercase;
+  transition: var(--transition); text-decoration: none; display: inline-block;
+}
+.btn-primary:hover {
+  background: rgba(0,229,255,0.2); box-shadow: var(--glow-cyan); transform: translateY(-2px);
+}
+.status-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 600;
+  font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px;
+}
+.badge-ok { background: rgba(0,255,136,0.12); color: var(--neon-green); border: 1px solid rgba(0,255,136,0.25); }
+.badge-warn { background: rgba(255,214,0,0.12); color: var(--neon-yellow); border: 1px solid rgba(255,214,0,0.25); }
+.badge-danger { background: rgba(255,51,102,0.12); color: var(--neon-pink); border: 1px solid rgba(255,51,102,0.25); }
+.badge-info { background: rgba(0,229,255,0.1); color: var(--cyan); border: 1px solid rgba(0,229,255,0.2); }
+.badge-dot { width: 7px; height: 7px; border-radius: 50%; }
+.badge-ok .badge-dot { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+.badge-warn .badge-dot { background: var(--neon-yellow); box-shadow: 0 0 8px var(--neon-yellow); }
+.badge-danger .badge-dot { background: var(--neon-pink); box-shadow: 0 0 8px var(--neon-pink); animation: pulse-dot 1s infinite; }
+.badge-info .badge-dot { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.4); }
+}
+
+/* ============================================
+   PAGE 1 — OVERVIEW
+   ============================================ */
+.hero-wrapper {
+  position: relative; width: 100%; min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background-color: #000;
+  background-image: url('images/hero-rider.jpg');
+  background-size: cover; background-position: center top;
+  color: #fff;
+}
+.hero-wrapper::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.8) 100%);
+  z-index: 1; pointer-events: none;
+}
+
+/* Navbar from Prompt */
+.hero-nav {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 120px;
+}
+.nav-logo-ipsum {
+  font-family: 'Schibsted Grotesk', sans-serif; font-weight: 600; font-size: 24px;
+  letter-spacing: -1.44px; display: flex; align-items: center; gap: 8px; color: #fff;
+  text-decoration: none;
+}
+.nav-links-center {
+  display: flex; gap: 32px;
+}
+.nav-links-center a {
+  font-family: 'Schibsted Grotesk', sans-serif; font-weight: 500; font-size: 16px;
+  letter-spacing: -0.2px; color: rgba(255,255,255,0.8); text-decoration: none;
+  display: flex; align-items: center; gap: 4px;
+}
+.nav-links-center a:hover { color: #fff; }
+.nav-actions { display: flex; gap: 16px; align-items: center; }
+.btn-login {
+  background: transparent; color: #fff; border: none; font-family: 'Schibsted Grotesk', sans-serif;
+  font-weight: 500; font-size: 16px; cursor: pointer; width: 82px;
+}
+.btn-signup {
+  background: #fff; color: #000; border: none; font-family: 'Schibsted Grotesk', sans-serif;
+  font-weight: 500; font-size: 16px; cursor: pointer; width: 101px; padding: 10px 0;
+  border-radius: 8px;
+}
+
+/* Hero Content from Prompt */
+.hero-content {
+  position: relative; z-index: 10; text-align: center; max-width: 800px;
+  margin-top: -120px; display: flex; flex-direction: column; align-items: center;
+  gap: 34px; padding: 0 120px;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+  padding: 6px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.2);
+  font-family: 'Inter', sans-serif; font-size: 14px; color: #fff;
+}
+.hero-badge-dark {
+  background: #0e1311; color: #fff; padding: 2px 8px; border-radius: 999px;
+  font-size: 12px; display: flex; align-items: center; gap: 4px;
+}
+.hero-title {
+  font-family: 'Fustat', sans-serif; font-weight: 700; font-size: 80px;
+  letter-spacing: -4.8px; line-height: 1; color: #fff; margin: 0;
+}
+.hero-subtitle {
+  font-family: 'Fustat', sans-serif; font-weight: 500; font-size: 20px;
+  letter-spacing: -0.4px; color: rgba(255,255,255,0.7); max-width: 542px;
+  margin: 300px auto 0;
+}
+
+/* Search Box from Prompt */
+.search-container {
+  margin-top: 10px; width: 100%; max-width: 728px;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(16px);
+  border-radius: 18px; padding: 16px; border: 1px solid rgba(255,255,255,0.1);
+  display: flex; flex-direction: column; gap: 12px; text-align: left;
+}
+.search-top {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: 'Schibsted Grotesk', sans-serif; font-weight: 500; font-size: 12px; color: #fff;
+}
+.btn-upgrade {
+  background: rgba(90,225,76,0.89); color: #000; border: none; border-radius: 4px;
+  padding: 2px 8px; margin-left: 8px; cursor: pointer; font-weight: 600;
+}
+.search-input-area {
+  background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px; border: 1px solid rgba(255,255,255,0.1);
+}
+.search-input {
+  flex: 1; background: transparent; border: none; color: #fff; font-size: 16px;
+  font-family: 'Inter', sans-serif; outline: none;
+}
+.search-input::placeholder { color: rgba(255,255,255,0.4); }
+.btn-submit {
+  width: 36px; height: 36px; border-radius: 50%; background: #fff; color: #000;
+  border: none; display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.search-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.search-actions { display: flex; gap: 8px; }
+.search-action-btn {
+  background: rgba(255,255,255,0.1); color: #fff; border: none; border-radius: 6px;
+  padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+}
+.char-counter { font-size: 12px; color: rgba(255,255,255,0.5); font-family: 'Inter', sans-serif; }
+.hero-eyebrow {
+  font-family: var(--font-display); font-size: 10px; font-weight: 600;
+  letter-spacing: 4px; text-transform: uppercase; color: var(--cyan);
+  border: 1px solid rgba(0,229,255,0.3); padding: 6px 16px; border-radius: 20px;
+  margin-bottom: 24px; display: inline-block; background: rgba(0,229,255,0.05);
+}
+.hero-headline {
+  font-family: var(--font-display); font-weight: 900;
+  font-size: clamp(32px, 4.5vw, 56px);
+  line-height: 1.15; color: #fff; margin-bottom: 20px;
+  background: linear-gradient(135deg, #fff 0%, var(--cyan) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero-desc {
+  font-family: 'Inter', sans-serif; font-size: 15px; color: rgba(255,255,255,0.55);
+  max-width: 480px; margin-bottom: 36px; line-height: 1.7;
+}
+.hero-btns { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.hero-cta {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--bg-primary); background: var(--cyan);
+  padding: 14px 32px; border-radius: 8px; cursor: pointer;
+  text-decoration: none; border: none;
+  transition: all 0.3s; box-shadow: 0 0 30px rgba(0,229,255,0.3);
+}
+.hero-cta:hover { transform: translateY(-2px); box-shadow: 0 0 50px rgba(0,229,255,0.5); }
+.hero-cta svg { width: 16px; height: 16px; }
+.hero-cta-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-display); font-size: 11px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-secondary); background: transparent;
+  padding: 14px 32px; border-radius: 8px; cursor: pointer;
+  text-decoration: none; border: 1px solid rgba(255,255,255,0.15);
+  transition: all 0.3s;
+}
+.hero-cta-secondary:hover { color: var(--cyan); border-color: rgba(0,229,255,0.4); }
+.hero-scroll-indicator {
+  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); z-index: 5;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.hero-scroll-indicator span {
+  font-family: var(--font-display); font-size: 9px; letter-spacing: 3px;
+  color: rgba(255,255,255,0.25); text-transform: uppercase;
+}
+.scroll-line {
+  width: 1px; height: 36px;
+  background: linear-gradient(to bottom, var(--cyan), transparent);
+  animation: scrollPulseAnim 2s ease-in-out infinite;
+}
+@keyframes scrollPulseAnim {
+  0%,100% { opacity: 0.3; transform: scaleY(0.6); }
+  50% { opacity: 1; transform: scaleY(1); }
+}
+@media (max-width: 900px) {
+  .hero-inner { flex-direction: column-reverse; text-align: center; padding: 0 24px; }
+  .hero-visual { flex: 0 0 auto; }
+  .hero-helmet-svg { width: 220px; height: 220px; }
+  .hero-btns { justify-content: center; }
+}
+.overview-about {
+  max-width: 800px; margin: 0 auto 60px; padding: 0 24px; text-align: center;
+}
+.overview-about p { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.8; }
+.overview-about strong { color: var(--cyan); font-weight: 600; }
+
+.features-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px; max-width: 1200px; margin: 0 auto; padding: 0 24px 80px; position: relative; z-index: 5;
+}
+
+/* 360 Showcase */
+.showcase-360 {
+  background: #fff; color: #000;
+  padding: 80px 24px; text-align: center;
+  position: relative;
+}
+.showcase-title {
+  font-family: 'Fustat', sans-serif; font-size: 42px; font-weight: 700;
+  margin-bottom: 40px; letter-spacing: -1px; color: #111;
+}
+.viewer-360 {
+  position: relative; max-width: 650px; margin: 0 auto;
+  cursor: grab; user-select: none; -webkit-user-select: none;
+}
+.viewer-360:active { cursor: grabbing; }
+.viewer-360 img {
+  position: relative; z-index: 1; width: 100%; height: auto; display: block;
+  pointer-events: none; margin: 0 auto;
+}
+.viewer-shadow {
+  width: 60%; height: 30px; background: radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, transparent 70%);
+  margin: -20px auto 30px; border-radius: 50%; position: relative; z-index: 1;
+}
+.viewer-controls {
+  display: flex; justify-content: center; gap: 24px; align-items: center;
+  max-width: 400px; margin: 0 auto;
+  color: #555; position: relative; z-index: 1;
+}
+.viewer-arrow {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1);
+  cursor: pointer; transition: var(--transition); color: #333;
+}
+.viewer-arrow:hover { background: rgba(0,0,0,0.1); border-color: #000; color: #000; }
+.viewer-arrow svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 2; fill: none; }
+.viewer-loader {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-family: var(--font-mono); font-size: 0.75rem; color: #000;
+  z-index: 5; letter-spacing: 1px;
+}
+
+.feature-card {
+  text-align: center; padding: 36px 24px; transition: var(--transition);
+  position: relative; overflow: hidden;
+}
+.feature-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0; transition: var(--transition);
+}
+.feature-card:hover::before { opacity: 1; }
+.feature-card:hover { transform: translateY(-4px); box-shadow: var(--glow-cyan); border-color: var(--border-glow); }
+.feature-icon {
+  width: 56px; height: 56px; margin: 0 auto 18px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 14px; background: rgba(0,229,255,0.08);
+  border: 1px solid rgba(0,229,255,0.15); font-size: 1.5rem;
+}
+.feature-card h3 {
+  font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 1.5px;
+  color: var(--text-primary); margin-bottom: 10px; text-transform: uppercase;
+}
+.feature-card p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; }
+
+/* How It Works */
+.how-it-works {
+  max-width: 1100px; margin: 0 auto 60px; padding: 0 24px;
+}
+.hiw-flow {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; flex-wrap: wrap;
+}
+.hiw-step {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px 18px; text-align: center; flex: 0 0 auto;
+  min-width: 130px;
+}
+.hiw-icon {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; margin-bottom: 10px;
+  background: rgba(0,229,255,0.08); border: 1.5px solid rgba(0,229,255,0.3);
+  box-shadow: 0 0 15px rgba(0,229,255,0.15);
+  transition: var(--transition);
+}
+.hiw-step:hover .hiw-icon { box-shadow: var(--glow-cyan-intense); transform: scale(1.1); }
+.hiw-label {
+  font-family: var(--font-mono); font-size: 0.72rem;
+  color: var(--text-secondary); letter-spacing: 0.5px;
+}
+.hiw-arrow {
+  font-size: 1.2rem; color: var(--cyan); opacity: 0.4;
+  padding: 0 4px; flex-shrink: 0;
+  animation: arrowPulse 2s ease-in-out infinite;
+}
+.hiw-arrow:nth-child(4) { animation-delay: 0.3s; }
+.hiw-arrow:nth-child(6) { animation-delay: 0.6s; }
+.hiw-arrow:nth-child(8) { animation-delay: 0.9s; }
+.hiw-arrow:nth-child(10) { animation-delay: 1.2s; }
+@keyframes arrowPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+.team-credit {
+  text-align: center; padding: 40px 24px 60px;
+  color: var(--text-dim); font-size: 0.82rem;
+  border-top: 1px solid var(--border-glass);
+  max-width: 600px; margin: 0 auto;
+}
+.team-credit strong { color: var(--text-secondary); }
+
+/* ============================================
+   PAGE 2 — LIVE SIMULATION
+   ============================================ */
+.sim-page { padding: 80px 16px 40px; }
+.sim-page-title {
+  text-align: center; font-family: var(--font-display); font-size: 1.2rem;
+  letter-spacing: 3px; color: var(--cyan); margin-bottom: 24px;
+  text-shadow: 0 0 20px rgba(0,229,255,0.3);
+}
+.sim-layout {
+  display: grid; grid-template-columns: 220px 1fr 220px;
+  grid-template-rows: auto auto auto; gap: 16px;
+  max-width: 1400px; margin: 0 auto;
+}
+.hud-left { grid-column: 1; grid-row: 1 / 3; display: flex; flex-direction: column; gap: 12px; }
+.hud-right { grid-column: 3; grid-row: 1 / 3; display: flex; flex-direction: column; gap: 12px; }
+.sim-scene-wrap { grid-column: 2; grid-row: 1; }
+.sim-bottom { grid-column: 1 / -1; grid-row: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.hud-panel { padding: 12px 14px; font-size: 0.78rem; }
+.hud-panel-title {
+  font-family: var(--font-display); font-size: 0.6rem; letter-spacing: 1.5px;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.hud-panel-title .icon { font-size: 0.8rem; }
+.hud-value { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-primary); margin-bottom: 4px; }
+.hud-sub { font-size: 0.7rem; color: var(--text-dim); }
+
+.sim-scene {
+  width: 100%; height: 380px; border-radius: var(--radius-lg); overflow: hidden;
+  position: relative; background: linear-gradient(180deg, #0a0e2a 0%, #0d1230 40%, #111840 70%, #1a1a3e 100%);
+  border: 1px solid var(--border-glass);
+}
+.scene-stars {
+  position: absolute; inset: 0;
+  background: radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6), transparent),
+              radial-gradient(1px 1px at 25% 8%, rgba(255,255,255,0.4), transparent),
+              radial-gradient(1.2px 1.2px at 40% 22%, rgba(255,255,255,0.5), transparent),
+              radial-gradient(1px 1px at 55% 5%, rgba(255,255,255,0.3), transparent),
+              radial-gradient(1px 1px at 70% 18%, rgba(255,255,255,0.5), transparent),
+              radial-gradient(1px 1px at 15% 30%, rgba(0,229,255,0.4), transparent),
+              radial-gradient(1px 1px at 90% 25%, rgba(0,229,255,0.3), transparent);
+}
+.scene-bg {
+  position: absolute; bottom: 120px; left: 0; width: 200%; height: 160px;
+  display: flex; align-items: flex-end;
+}
+.scene-bg.scrolling { animation: bgScroll 25s linear infinite; }
+.building {
+  flex-shrink: 0; background: rgba(10,14,42,0.9);
+  border: 1px solid rgba(0,229,255,0.06); margin-right: 6px; position: relative;
+}
+.building::before {
+  content: ''; position: absolute; top: 4px; left: 3px; right: 3px; bottom: 0;
+  background: repeating-linear-gradient(0deg, transparent 0px, transparent 8px, rgba(0,229,255,0.04) 8px, rgba(0,229,255,0.04) 10px);
+}
+.scene-road {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 120px;
+  background: linear-gradient(180deg, #1a1a2e 0%, #151525 100%);
+  border-top: 2px solid rgba(0,229,255,0.15);
+}
+.road-surface { position: absolute; top: 2px; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, #1e1e35, #181830); }
+.road-lines {
+  position: absolute; top: 50%; left: 0; width: 200%; height: 3px; transform: translateY(-50%);
+  background: repeating-linear-gradient(90deg, rgba(0,229,255,0.4) 0px, rgba(0,229,255,0.4) 50px, transparent 50px, transparent 110px);
+}
+.road-lines.scrolling { animation: roadScroll 1.5s linear infinite; }
+.road-edge-bottom { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(0,229,255,0.08); }
+
+.bike-container {
+  position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%);
+  width: 320px; height: 220px; transition: transform 0.4s ease;
+}
+.bike-container.swerving { animation: swerve 0.8s ease-in-out infinite; }
+.bike-container.crashed { animation: crashTip 0.6s ease-out forwards; }
+.bike-container.resetting { animation: crashReset 0.8s ease-out forwards; }
+.bike-svg { width: 100%; height: 100%; }
+.bike-svg .neon-stroke { fill: none; stroke: var(--cyan); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bike-svg .neon-fill { fill: rgba(0,229,255,0.08); stroke: var(--cyan); stroke-width: 1.5; }
+.wheel-spokes { transform-origin: center; }
+.wheel-spokes.spinning { animation: wheelSpin 0.5s linear infinite; }
+.rider-group { transition: transform 0.6s ease; }
+.rider-group.slumped { transform: rotate(12deg) translate(5px, 8px); }
+.helmet-shape { opacity: 0; transition: opacity 0.4s ease; }
+.helmet-shape.visible { opacity: 1; }
+.headlight-glow { opacity: 0; transition: opacity 0.5s ease; }
+.headlight-glow.on { opacity: 1; }
+
+.scene-banner {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+  padding: 10px 28px; border-radius: var(--radius-sm);
+  font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 2px;
+  text-transform: uppercase; z-index: 10; display: none; white-space: nowrap;
+  animation: bannerPulse 2s ease-in-out infinite;
+}
+.scene-banner.active { display: block; }
+.banner-danger { background: rgba(255,51,102,0.15); border: 1px solid rgba(255,51,102,0.4); color: var(--neon-pink); text-shadow: 0 0 10px rgba(255,51,102,0.5); }
+.banner-warn { background: rgba(255,214,0,0.12); border: 1px solid rgba(255,214,0,0.3); color: var(--neon-yellow); text-shadow: 0 0 10px rgba(255,214,0,0.4); }
+.banner-ok { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); color: var(--neon-green); text-shadow: 0 0 10px rgba(0,255,136,0.4); }
+
+.emergency-panel {
+  position: absolute; top: 8px; right: 8px; bottom: 8px; width: 260px;
+  background: rgba(6,6,18,0.92); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,51,102,0.3); border-radius: var(--radius); padding: 16px;
+  display: none; z-index: 15; overflow-y: auto;
+}
+.emergency-panel.active { display: block; animation: slideInRight 0.4s ease; }
+.emergency-panel h4 { font-family: var(--font-display); font-size: 0.7rem; letter-spacing: 2px; color: var(--neon-pink); margin-bottom: 14px; text-transform: uppercase; }
+.emg-step { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; opacity: 0; transform: translateX(20px); transition: all 0.4s ease; }
+.emg-step.visible { opacity: 1; transform: translateX(0); }
+.emg-step-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(255,51,102,0.15); border: 1px solid rgba(255,51,102,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 0.65rem; color: var(--neon-pink); flex-shrink: 0;
+}
+.emg-step-num.done { background: rgba(0,255,136,0.15); border-color: rgba(0,255,136,0.4); color: var(--neon-green); }
+.emg-step-text { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; }
+.emg-step-text strong { color: var(--text-primary); }
+.emg-step-text .coord { font-family: var(--font-mono); font-size: 0.7rem; color: var(--cyan); }
+.emg-sms-box {
+  background: rgba(0,229,255,0.05); border: 1px solid rgba(0,229,255,0.15);
+  border-radius: var(--radius-sm); padding: 10px; margin-top: 6px;
+  font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-secondary); line-height: 1.5;
+}
+
+.sys-log { max-height: 180px; overflow-y: auto; padding: 14px; }
+.sys-log::-webkit-scrollbar { width: 4px; }
+.sys-log::-webkit-scrollbar-track { background: transparent; }
+.sys-log::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.2); border-radius: 2px; }
+.log-entry { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.03); display: flex; gap: 10px; }
+.log-time { color: var(--text-dim); white-space: nowrap; }
+.log-msg { color: var(--text-secondary); }
+.log-entry.log-warn .log-msg { color: var(--neon-yellow); }
+.log-entry.log-danger .log-msg { color: var(--neon-pink); }
+.log-entry.log-ok .log-msg { color: var(--neon-green); }
+.log-entry.log-info .log-msg { color: var(--cyan); }
+
+.sim-controls {
+  grid-column: 1 / -1; display: flex; align-items: center; justify-content: center;
+  gap: 16px; flex-wrap: wrap; padding: 14px;
+}
+.ctrl-btn {
+  font-family: var(--font-display); font-size: 0.7rem; letter-spacing: 1px;
+  padding: 8px 20px; border: 1px solid var(--border-glass);
+  background: var(--bg-glass); color: var(--text-secondary);
+  border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); text-transform: uppercase;
+}
+.ctrl-btn:hover { border-color: var(--border-glow); color: var(--cyan); background: rgba(0,229,255,0.08); }
+.ctrl-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,229,255,0.12); }
+.speed-group, .trigger-group { display: flex; align-items: center; gap: 6px; }
+.speed-label, .trigger-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); margin-right: 4px; text-transform: uppercase; letter-spacing: 1px; }
+.trigger-select {
+  font-family: var(--font-mono); font-size: 0.72rem; padding: 8px 14px;
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  color: var(--text-secondary); border-radius: var(--radius-sm); cursor: pointer; outline: none;
+}
+.trigger-select:focus { border-color: var(--cyan); }
+.trigger-select option { background: var(--bg-secondary); }
+
+/* ============================================
+   PAGE 3 — SYSTEM ARCHITECTURE
+   ============================================ */
+.arch-page { padding: 80px 24px 60px; max-width: 1200px; margin: 0 auto; }
+
+/* 3D Helmet Viewer */
+.helmet3d-section { margin-bottom: 60px; }
+.helmet3d-wrapper {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;
+}
+.helmet-canvas-wrap {
+  position: relative; border-radius: var(--radius-lg); overflow: hidden;
+  aspect-ratio: 1 / 1; max-height: 480px;
+  border: 1px solid var(--border-glass);
+  background: radial-gradient(ellipse at center, #0d1230 0%, #060612 100%);
+}
+#helmetCanvas { width: 100%; height: 100%; display: block; cursor: grab; }
+#helmetCanvas:active { cursor: grabbing; }
+.canvas-label {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim);
+  letter-spacing: 1px; text-transform: uppercase; background: rgba(6,6,18,0.7);
+  padding: 4px 14px; border-radius: 10px;
+}
+
+.helmet-controls-wrap { display: flex; flex-direction: column; gap: 16px; }
+
+/* Toggle buttons */
+.toggle-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.toggle-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px; border-radius: var(--radius-sm); cursor: pointer;
+  border: 1px solid var(--border-glass); background: var(--bg-glass);
+  transition: var(--transition); user-select: none;
+}
+.toggle-btn:hover { border-color: var(--border-glow); }
+.toggle-btn.active { border-color: var(--cyan); background: rgba(0,229,255,0.08); }
+.toggle-switch {
+  width: 40px; height: 22px; border-radius: 11px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  position: relative; transition: var(--transition); flex-shrink: 0;
+}
+.toggle-switch::after {
+  content: ''; position: absolute;
+  top: 2px; left: 2px; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--text-dim); transition: var(--transition);
+}
+.toggle-btn.active .toggle-switch {
+  background: rgba(0,229,255,0.2); border-color: var(--cyan);
+}
+.toggle-btn.active .toggle-switch::after {
+  left: 20px; background: var(--cyan); box-shadow: 0 0 8px var(--cyan);
+}
+.toggle-label {
+  font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary);
+}
+.toggle-btn.active .toggle-label { color: var(--cyan); }
+.toggle-icon { font-size: 1.1rem; flex-shrink: 0; }
+
+/* Drowsiness eye */
+.drowsy-section { margin-top: 6px; }
+.eye-graphic-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px;
+}
+.eye-svg { width: 120px; height: 60px; }
+.eyelid-top { transition: transform 1.5s ease; transform-origin: center 20px; }
+.eyelid-top.closing { transform: scaleY(2.5) translateY(5px); }
+.drowsy-alert-banner {
+  display: none; padding: 8px 16px; border-radius: var(--radius-sm);
+  background: rgba(255,51,102,0.12); border: 1px solid rgba(255,51,102,0.35);
+  color: var(--neon-pink); font-family: var(--font-mono); font-size: 0.7rem;
+  letter-spacing: 1px; text-align: center; animation: bannerPulse 1s infinite;
+  text-transform: uppercase;
+}
+.drowsy-alert-banner.active { display: block; }
+
+/* Stats Dashboard */
+.stats-dashboard {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px; margin-top: 14px;
+}
+.stat-card {
+  padding: 18px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass); background: var(--bg-glass);
+  text-align: center; transition: var(--transition);
+}
+.stat-card:hover { border-color: var(--border-glow); }
+.stat-card-label {
+  font-family: var(--font-display); font-size: 0.6rem; letter-spacing: 2px;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;
+}
+.stat-card-value {
+  font-family: var(--font-mono); font-size: 1.15rem; font-weight: 600; transition: color 0.4s;
+}
+.stat-card-sub {
+  font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim); margin-top: 4px;
+}
+
+/* Block diagram */
+.block-diagram {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  gap: 40px; align-items: center; margin-bottom: 60px;
+  position: relative; padding: 40px 20px;
+}
+.block-col { display: flex; flex-direction: column; gap: 14px; }
+.block-node {
+  padding: 14px 18px; border-radius: var(--radius-sm);
+  font-family: var(--font-mono); font-size: 0.78rem;
+  text-align: center; position: relative; transition: var(--transition); line-height: 1.4;
+}
+.block-node:hover { transform: translateY(-2px); }
+.block-input { background: rgba(0,119,255,0.08); border: 1px solid rgba(0,119,255,0.3); color: var(--blue); box-shadow: 0 0 15px rgba(0,119,255,0.08); }
+.block-input:hover { box-shadow: 0 0 25px rgba(0,119,255,0.15); }
+.block-center {
+  background: rgba(0,229,255,0.1); border: 2px solid rgba(0,229,255,0.4);
+  color: var(--cyan); padding: 24px 30px; box-shadow: var(--glow-cyan);
+  font-family: var(--font-display); font-size: 0.85rem; letter-spacing: 1px;
+}
+.block-output { background: rgba(0,255,136,0.06); border: 1px solid rgba(0,255,136,0.25); color: var(--neon-green); box-shadow: 0 0 15px rgba(0,255,136,0.06); }
+.block-output:hover { box-shadow: 0 0 25px rgba(0,255,136,0.12); }
+.block-ignition { background: rgba(255,214,0,0.08); border: 1px solid rgba(255,214,0,0.3); color: var(--neon-yellow); }
+.block-col-label {
+  font-family: var(--font-display); font-size: 0.65rem; letter-spacing: 2px;
+  color: var(--text-dim); text-transform: uppercase; text-align: center; margin-bottom: 6px;
+}
+.block-center-col { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+
+/* Helmet diagrams */
+.helmet-diagrams { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 60px; }
+.helmet-diagram-card { padding: 30px; text-align: center; min-height: 380px; }
+.helmet-diagram-card h4 {
+  font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 2px;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 20px;
+}
+.helmet-svg { width: 100%; max-width: 320px; margin: 0 auto; }
+
+/* Data flow */
+.dataflow {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+  align-items: start; margin-bottom: 30px; position: relative; padding: 30px 10px;
+}
+.dataflow-col { display: flex; flex-direction: column; gap: 12px; }
+.dataflow-col-label {
+  font-family: var(--font-display); font-size: 0.62rem; letter-spacing: 2px;
+  color: var(--text-dim); text-transform: uppercase; text-align: center;
+  padding-bottom: 10px; border-bottom: 1px solid var(--border-glass); margin-bottom: 6px;
+}
+.df-node { padding: 12px 14px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.73rem; text-align: center; transition: var(--transition); }
+.df-sensor { background: rgba(0,119,255,0.08); border: 1px solid rgba(0,119,255,0.25); color: var(--blue); }
+.df-mcu { background: rgba(0,229,255,0.1); border: 1.5px solid rgba(0,229,255,0.35); color: var(--cyan); }
+.df-output { background: rgba(0,255,136,0.06); border: 1px solid rgba(0,255,136,0.2); color: var(--neon-green); }
+.df-external { background: rgba(255,214,0,0.06); border: 1px solid rgba(255,214,0,0.2); color: var(--neon-yellow); }
+.legend { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+.legend-item { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); }
+.legend-line { width: 30px; height: 2px; border-radius: 1px; }
+.legend-data { background: var(--cyan); }
+.legend-control { background: var(--neon-yellow); border-style: dashed; height: 0; border-top: 2px dashed var(--neon-yellow); width: 30px; }
+.legend-alert { background: var(--neon-pink); }
+
+/* ============================================
+   PAGE 4 — FLOWCHART
+   ============================================ */
+.flow-page { padding: 80px 24px 60px; max-width: 900px; margin: 0 auto; }
+.flowchart { display: flex; flex-direction: column; align-items: center; gap: 0; position: relative; padding: 20px 0; }
+.fc-node {
+  position: relative; z-index: 2; text-align: center;
+  font-family: 'Fustat', var(--font-body); font-weight: 500; font-size: 0.85rem; letter-spacing: 0.5px;
+  padding: 16px 28px; transition: all 0.3s ease; max-width: 320px;
+  backdrop-filter: blur(10px);
+}
+.fc-node:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+.fc-node small { opacity: 0.6; font-family: var(--font-mono); font-size: 0.7rem; display: block; margin-top: 6px; }
+
+.fc-start { border-radius: 40px; background: rgba(0,255,136,0.05); border: 1px solid rgba(0,255,136,0.5); color: var(--neon-green); box-shadow: var(--glow-green); font-weight: 700; letter-spacing: 1.5px; }
+.fc-process { border-radius: 12px; background: linear-gradient(145deg, rgba(0,119,255,0.12), rgba(0,119,255,0.02)); border: 1px solid rgba(0,119,255,0.4); color: var(--text-primary); box-shadow: 0 4px 15px rgba(0,119,255,0.1); }
+.fc-decision {
+  transform: rotate(45deg); width: 145px; height: 145px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, rgba(255,214,0,0.15), rgba(255,214,0,0.02));
+  border: 1px solid rgba(255,214,0,0.5); border-radius: 16px;
+  transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(255,214,0,0.15);
+  backdrop-filter: blur(10px);
+}
+.fc-decision:hover { transform: rotate(45deg) scale(1.05); box-shadow: 0 8px 30px rgba(255,214,0,0.25); }
+.fc-decision-text {
+  transform: rotate(-45deg); font-family: 'Fustat', var(--font-body); font-weight: 600; font-size: 0.85rem;
+  color: var(--neon-yellow); text-align: center; line-height: 1.4; letter-spacing: 0.5px;
+}
+.fc-action { border-radius: 12px; background: linear-gradient(145deg, rgba(255,51,102,0.12), rgba(255,51,102,0.02)); border: 1px solid rgba(255,51,102,0.4); color: var(--text-primary); box-shadow: 0 4px 15px rgba(255,51,102,0.15); }
+.fc-end { border-radius: 40px; background: rgba(0,229,255,0.05); border: 1px solid rgba(0,229,255,0.5); color: var(--cyan); box-shadow: var(--glow-cyan); font-weight: 700; letter-spacing: 1.5px; }
+
+.fc-arrow {
+  width: 2px; height: 40px; background: linear-gradient(to bottom, rgba(0,229,255,0.1), rgba(0,229,255,0.6));
+  position: relative; z-index: 1;
+}
+.fc-arrow::after {
+  content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+  border-left: 6px solid transparent; border-right: 6px solid transparent;
+  border-top: 8px solid rgba(0,229,255,0.8);
+}
+.fc-arrow-short { height: 26px; }
+
+.fc-branch-label {
+  font-family: var(--font-display); font-size: 0.65rem; letter-spacing: 1.5px; font-weight: 600;
+  text-transform: uppercase; padding: 4px 12px; border-radius: 20px; margin-bottom: 6px;
+  background: var(--bg-card); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);
+}
+.fc-legend { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 40px; padding: 20px; }
+.fc-legend-item { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); }
+.fc-legend-shape { width: 28px; height: 18px; border-radius: 3px; }
+.fc-legend-shape.oval { border-radius: 10px; }
+.fc-legend-shape.diamond { width: 18px; height: 18px; transform: rotate(45deg); border-radius: 2px; }
+.fc-legend-shape.start-shape { background: rgba(0,255,136,0.15); border: 1.5px solid rgba(0,255,136,0.4); }
+.fc-legend-shape.process-shape { background: rgba(0,119,255,0.12); border: 1.5px solid rgba(0,119,255,0.35); }
+.fc-legend-shape.decision-shape { background: rgba(255,214,0,0.12); border: 1.5px solid rgba(255,214,0,0.4); }
+.fc-legend-shape.action-shape { background: rgba(255,51,102,0.12); border: 1.5px solid rgba(255,51,102,0.35); }
+
+/* ---- FOOTER ---- */
+.site-footer {
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--border-glass);
+  padding: 36px 24px;
+  text-align: center;
+  background: rgba(6,6,18,0.5);
+}
+.footer-logo {
+  font-family: var(--font-display); font-size: 1rem; letter-spacing: 3px;
+  color: var(--cyan); text-shadow: 0 0 15px rgba(0,229,255,0.3); margin-bottom: 10px;
+}
+.footer-text {
+  font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim);
+  line-height: 1.8; letter-spacing: 0.5px;
+}
+.footer-text span { color: var(--text-secondary); }
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes roadScroll { from { background-position-x: 0; } to { background-position-x: -160px; } }
+@keyframes bgScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes wheelSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes swerve {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  20% { transform: translateX(-50%) translateY(-18px); }
+  40% { transform: translateX(-50%) translateY(12px); }
+  60% { transform: translateX(-50%) translateY(-10px); }
+  80% { transform: translateX(-50%) translateY(16px); }
+}
+@keyframes crashTip {
+  0% { transform: translateX(-50%) rotate(0deg); }
+  40% { transform: translateX(-40%) rotate(25deg) translateY(10px); }
+  100% { transform: translateX(-30%) rotate(55deg) translateY(30px); }
+}
+@keyframes crashReset {
+  0% { transform: translateX(-30%) rotate(55deg) translateY(30px); }
+  60% { transform: translateX(-50%) rotate(-5deg) translateY(-5px); }
+  100% { transform: translateX(-50%) rotate(0deg) translateY(0); }
+}
+@keyframes bannerPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes dashFlow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -20; } }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 1024px) {
+  .sim-layout { grid-template-columns: 1fr; }
+  .hud-left, .hud-right { grid-column: 1; grid-row: auto; flex-direction: row; flex-wrap: wrap; }
+  .hud-left .hud-panel, .hud-right .hud-panel { flex: 1; min-width: 180px; }
+  .sim-scene-wrap { grid-column: 1; }
+  .sim-bottom { grid-column: 1; grid-template-columns: 1fr; }
+  .block-diagram { grid-template-columns: 1fr; gap: 20px; }
+  .helmet-diagrams { grid-template-columns: 1fr; }
+  .helmet3d-wrapper { grid-template-columns: 1fr; }
+  .helmet-canvas-wrap { max-height: 400px; }
+  .fc-branch { flex-direction: column; gap: 16px; align-items: center; }
+}
+@media (max-width: 768px) {
+  .top-nav { padding: 0 16px; }
+  .nav-links {
+    display: none; position: absolute; top: 64px; left: 0; right: 0;
+    background: rgba(6,6,18,0.95); backdrop-filter: var(--glass-blur);
+    flex-direction: column; padding: 16px; border-bottom: 1px solid var(--border-glass);
+  }
+  .nav-links.open { display: flex; }
+  .nav-mobile-btn { display: block; }
+  .hero h1 { letter-spacing: 3px; }
+  .features-grid { grid-template-columns: 1fr; }
+  .sim-scene { height: 300px; }
+  .dataflow { grid-template-columns: 1fr 1fr; }
+  .emergency-panel { width: 200px; padding: 12px; }
+  .hiw-flow { flex-direction: column; gap: 0; }
+  .hiw-arrow { transform: rotate(90deg); padding: 2px 0; }
+  .stats-dashboard { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== LOADING SCREEN ========== -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-helmet-icon">
+    <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 15,50 Q 10,40 12,25 Q 16,8 40,5 Q 64,8 68,25 Q 70,40 65,50 Q 62,58 58,62 L 22,62 Q 18,58 15,50 Z"
+            fill="rgba(0,229,255,0.08)" stroke="var(--cyan)" stroke-width="2.5"/>
+      <path d="M 55,38 Q 68,42 66,50 Q 64,58 58,62 L 56,52 Q 62,48 58,40 Z"
+            fill="rgba(0,229,255,0.12)" stroke="var(--cyan)" stroke-width="1.5" opacity="0.7"/>
+      <circle cx="40" cy="72" r="3" fill="var(--cyan)" opacity="0.5"/>
+    </svg>
+  </div>
+  <div class="loading-text">Initializing Smart Helmet System...</div>
+  <div class="loading-bar-track">
+    <div class="loading-bar-fill"></div>
+  </div>
+</div>
+
+<!-- ========== NAVIGATION ========== -->
+<nav class="top-nav" id="topNav">
+  <a class="nav-logo" href="#overview" onclick="navigateTo('overview')">⬡ CIPHER</a>
+  <button class="nav-mobile-btn" id="navMobileBtn" aria-label="Toggle menu">☰</button>
+  <div class="nav-links" id="navLinks">
+    <a class="nav-link active" data-page="overview" href="#overview" onclick="navigateTo('overview')">Overview</a>
+    <a class="nav-link" data-page="simulation" href="#simulation" onclick="navigateTo('simulation')">Live Simulation</a>
+    <a class="nav-link" data-page="architecture" href="#architecture" onclick="navigateTo('architecture')">Architecture</a>
+    <a class="nav-link" data-page="flowchart" href="#flowchart" onclick="navigateTo('flowchart')">Flowchart</a>
+  </div>
+</nav>
+
+<section class="page active" id="page-overview">
+  <div class="hero-wrapper">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="hero-badge-dark"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7 7 1-5 5 1 7-7-4-7 4 1-7-5-5 7-1z"/></svg> CIPHER</span>
+        Smart Helmet Safety System
+      </div>
+      
+      <h1 class="hero-title">Ride Safe, Ride Smart</h1>
+      <p class="hero-subtitle">Cognitive Ignition & Proximity Helmet for Enhanced Rider Safety. Real-time fatigue detection, accident response, and intelligent ignition control.</p>
+    </div>
+  </div>
+
+  <!-- 360 Rotating Showcase -->
+  <div class="showcase-360" id="showcase">
+    <h2 class="showcase-title">Interactive 360° View</h2>
+    <div class="viewer-360" id="viewer360">
+      <div class="viewer-loader" id="viewer360Loader">Loading 0%</div>
+      <img id="viewer360Img" src="images/rotate/0_0.jpg" alt="Helmet 360 View" draggable="false">
+      <div class="viewer-shadow"></div>
+      <div class="viewer-controls">
+        <div class="viewer-arrow" id="btn360-left"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
+        <div style="font-family:'Schibsted Grotesk',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;color:rgba(0,0,0,0.5);font-weight:600;">Drag to Rotate</div>
+        <div class="viewer-arrow" id="btn360-right"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="features-grid" style="margin-top: 80px;">
+    <div class="feature-card glass-panel">
+      <div class="feature-icon">🛡️</div>
+      <h3>Helmet Detection</h3>
+      <p>IR proximity sensor detects if helmet is properly worn before allowing ignition.</p>
+    </div>
+    <div class="feature-card glass-panel">
+      <div class="feature-icon">😴</div>
+      <h3>Fatigue Monitoring</h3>
+      <p>Eye-blink monitoring tracks rider alertness and triggers buzzer alerts on drowsiness.</p>
+    </div>
+    <div class="feature-card glass-panel">
+      <div class="feature-icon">🍺</div>
+      <h3>Alcohol Detection</h3>
+      <p>MQ-3 sensor analyzes breath to detect intoxication. Ignition locks if limits are exceeded.</p>
+    </div>
+    <div class="feature-card glass-panel">
+      <div class="feature-icon">💥</div>
+      <h3>Accident Detection</h3>
+      <p>MPU6050 accelerometer detects sudden impacts and triggers automatic SOS response.</p>
+    </div>
+    <div class="feature-card glass-panel">
+      <div class="feature-icon">📡</div>
+      <h3>GPS + Emergency SMS</h3>
+      <p>NEO-6M GPS + SIM800L GSM dispatch emergency SMS with live coordinates on crash.</p>
+    </div>
+  </div>
+
+  <!-- How It Works -->
+  <div class="how-it-works">
+    <h2 class="section-title" style="text-align:center;">How It Works</h2>
+    <div class="hiw-flow">
+      <div class="hiw-step"><div class="hiw-icon">🪖</div><div class="hiw-label">Helmet Worn</div></div>
+      <div class="hiw-arrow">→</div>
+      <div class="hiw-step"><div class="hiw-icon">📡</div><div class="hiw-label">Sensors Active</div></div>
+      <div class="hiw-arrow">→</div>
+      <div class="hiw-step"><div class="hiw-icon">⚙️</div><div class="hiw-label">Data Processed</div></div>
+      <div class="hiw-arrow">→</div>
+      <div class="hiw-step"><div class="hiw-icon">🔑</div><div class="hiw-label">Ignition Unlocked</div></div>
+      <div class="hiw-arrow">→</div>
+      <div class="hiw-step"><div class="hiw-icon">📊</div><div class="hiw-label">Monitoring Live</div></div>
+      <div class="hiw-arrow">→</div>
+      <div class="hiw-step"><div class="hiw-icon">🚨</div><div class="hiw-label">SOS on Crash</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== PAGE 2: LIVE SIMULATION ========== -->
+<section class="page" id="page-simulation">
+  <div class="sim-page">
+    <div class="sim-page-title">⬡ LIVE SIMULATION</div>
+    <div class="sim-layout">
+      <div class="hud-left">
+        <div class="hud-panel glass-panel"><div class="hud-panel-title"><span class="icon">🪖</span> Helmet Status</div><div class="hud-value" id="hud-helmet-val">Not Detected</div><div id="hud-helmet-badge"><span class="status-badge badge-danger"><span class="badge-dot"></span> No Helmet</span></div></div>
+        <div class="hud-panel glass-panel"><div class="hud-panel-title"><span class="icon">🧑</span> Rider Status</div><div class="hud-value" id="hud-rider-val">Idle</div><div id="hud-rider-badge"><span class="status-badge badge-info"><span class="badge-dot"></span> Standby</span></div></div>
+        <div class="hud-panel glass-panel"><div class="hud-panel-title"><span class="icon">🔑</span> Ignition</div><div class="hud-value" id="hud-ignition-val">Locked</div><div id="hud-ignition-badge"><span class="status-badge badge-danger"><span class="badge-dot"></span> Locked</span></div></div>
+      </div>
+      <div class="sim-scene-wrap">
+        <div class="sim-scene" id="simScene">
+          <div class="scene-stars"></div>
+          <div class="scene-bg" id="sceneBg">
+            <div class="building" style="width:35px;height:80px;"></div><div class="building" style="width:28px;height:120px;"></div><div class="building" style="width:45px;height:65px;"></div><div class="building" style="width:30px;height:140px;"></div><div class="building" style="width:50px;height:90px;"></div><div class="building" style="width:25px;height:110px;"></div><div class="building" style="width:40px;height:70px;"></div><div class="building" style="width:55px;height:130px;"></div><div class="building" style="width:30px;height:85px;"></div><div class="building" style="width:38px;height:100px;"></div><div class="building" style="width:42px;height:75px;"></div><div class="building" style="width:28px;height:145px;"></div><div class="building" style="width:35px;height:60px;"></div><div class="building" style="width:48px;height:115px;"></div><div class="building" style="width:32px;height:95px;"></div><div class="building" style="width:40px;height:80px;"></div><div class="building" style="width:35px;height:80px;"></div><div class="building" style="width:28px;height:120px;"></div><div class="building" style="width:45px;height:65px;"></div><div class="building" style="width:30px;height:140px;"></div><div class="building" style="width:50px;height:90px;"></div><div class="building" style="width:25px;height:110px;"></div><div class="building" style="width:40px;height:70px;"></div><div class="building" style="width:55px;height:130px;"></div><div class="building" style="width:30px;height:85px;"></div><div class="building" style="width:38px;height:100px;"></div>
+          </div>
+          <div class="scene-road"><div class="road-surface"></div><div class="road-lines" id="roadLines"></div><div class="road-edge-bottom"></div></div>
+          <div class="bike-container" id="bikeContainer">
+            <svg class="bike-svg" viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg">
+              <g class="rear-wheel">
+                <circle cx="65" cy="170" r="34" fill="none" stroke="var(--cyan)" stroke-width="6" opacity="0.8"/>
+                <circle cx="65" cy="170" r="28" fill="rgba(0,229,255,0.05)" stroke="var(--cyan)" stroke-width="2" opacity="0.4"/>
+                <circle cx="65" cy="170" r="8" fill="var(--cyan)" opacity="0.7"/>
+                <g class="wheel-spokes" id="rearSpokes" style="transform-origin:65px 170px">
+                  <path d="M 65,140 L 65,200 M 35,170 L 95,170 M 45,150 L 85,190 M 45,190 L 85,150" stroke="var(--cyan)" stroke-width="2" opacity="0.5"/>
+                </g>
+              </g>
+              <g class="front-wheel">
+                <circle cx="265" cy="170" r="34" fill="none" stroke="var(--cyan)" stroke-width="6" opacity="0.8"/>
+                <circle cx="265" cy="170" r="28" fill="rgba(0,229,255,0.05)" stroke="var(--cyan)" stroke-width="2" opacity="0.4"/>
+                <circle cx="265" cy="170" r="8" fill="var(--cyan)" opacity="0.7"/>
+                <g class="wheel-spokes" id="frontSpokes" style="transform-origin:265px 170px">
+                  <path d="M 265,140 L 265,200 M 235,170 L 295,170 M 245,150 L 285,190 M 245,190 L 285,150" stroke="var(--cyan)" stroke-width="2" opacity="0.5"/>
+                </g>
+              </g>
+              <line x1="265" y1="170" x2="235" y2="100" stroke="var(--cyan)" stroke-width="6" opacity="0.6"/>
+              <line x1="65" y1="170" x2="110" y2="120" stroke="var(--cyan)" stroke-width="5" opacity="0.6"/>
+              <path d="M 110,120 L 140,85 L 180,80 L 220,90 L 245,115 L 235,145 L 180,165 L 120,160 Z" fill="rgba(0,229,255,0.12)" stroke="var(--cyan)" stroke-width="2"/>
+              <path d="M 140,85 Q 160,70 180,80" fill="none" stroke="var(--cyan)" stroke-width="3"/>
+              <path d="M 100,105 Q 120,105 140,85" fill="none" stroke="var(--cyan)" stroke-width="3"/>
+              <path d="M 220,90 Q 235,75 250,85" fill="none" stroke="var(--cyan)" stroke-width="2" opacity="0.7"/>
+              <path d="M 150,160 L 110,180 L 85,175 L 85,165 L 115,168 Z" fill="none" stroke="var(--cyan)" stroke-width="2"/>
+              <path d="M 245,115 L 260,110 L 255,130 Z" fill="var(--cyan)" opacity="0.8"/>
+              <circle cx="260" cy="120" r="14" fill="rgba(255,214,0,0.08)" class="headlight-glow" id="headlightGlow"/>
+              <circle cx="260" cy="120" r="4" fill="var(--neon-yellow)" opacity="0.8" id="headlightBulb"/>
+              <g class="rider-group" id="riderGroup">
+                <path d="M 130,105 L 140,140 L 110,150" fill="none" stroke="var(--text-secondary)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 130,105 Q 160,65 190,80" fill="none" stroke="var(--text-secondary)" stroke-width="12" stroke-linecap="round"/>
+                <path d="M 180,75 L 205,95 L 225,95" fill="none" stroke="var(--text-secondary)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="195" cy="55" r="14" fill="rgba(158,168,200,0.3)" stroke="var(--text-secondary)" stroke-width="2"/>
+                <g class="helmet-shape" id="helmetShape">
+                  <path d="M 185,55 Q 185,35 198,35 Q 212,35 214,55 Q 214,68 195,68 Q 185,68 185,55 Z" fill="rgba(0,229,255,0.15)" stroke="var(--cyan)" stroke-width="2"/>
+                  <line x1="190" y1="55" x2="210" y2="55" stroke="var(--cyan)" stroke-width="2" opacity="0.6"/>
+                  <circle cx="210" cy="50" r="2.5" fill="var(--cyan)" opacity="0.9"/>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <div class="scene-banner banner-danger" id="bannerHelmet">⚠ Helmet Not Detected — Ignition Locked</div>
+          <div class="scene-banner banner-warn" id="bannerFatigue">😴 Fatigue Detected — Alert: Take a Break!</div>
+          <div class="scene-banner banner-warn" id="bannerAlcohol">🍺 Alcohol/Anomaly Detected — Warning!</div>
+          <div class="scene-banner banner-danger" id="bannerAccident">💥 Accident Detected — Emergency Protocol</div>
+          <div class="scene-banner banner-ok" id="bannerOk">✅ All Systems Normal — Riding Safely</div>
+          <div class="emergency-panel" id="emergencyPanel">
+            <h4>🚨 Emergency Sequence</h4>
+            <div class="emg-step" id="emgStep1"><div class="emg-step-num">1</div><div class="emg-step-text"><strong>Accident Detected</strong><br>MPU6050 triggered — sudden impact & orientation change</div></div>
+            <div class="emg-step" id="emgStep2"><div class="emg-step-num">2</div><div class="emg-step-text"><strong>GPS Location Acquired</strong><br><span class="coord">12.9716° N, 77.5946° E</span></div></div>
+            <div class="emg-step" id="emgStep3"><div class="emg-step-num">3</div><div class="emg-step-text"><strong>Emergency SMS Preview</strong><div class="emg-sms-box">TO: +91 98765 43210<br>⚠️ CIPHER ALERT: Accident detected!<br>Location: 12.9716°N, 77.5946°E<br>maps.google.com/?q=12.9716,77.5946<br>Time: <span id="emgTime">--:--:--</span></div></div></div>
+            <div class="emg-step" id="emgStep4"><div class="emg-step-num">4</div><div class="emg-step-text"><strong>Emergency Contacts Notified</strong><br>SMS dispatched via SIM800L GSM module ✓</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="hud-right">
+        <div class="hud-panel glass-panel"><div class="hud-panel-title"><span class="icon">💥</span> Accident Status</div><div class="hud-value" id="hud-accident-val">No Incident</div><div id="hud-accident-badge"><span class="status-badge badge-ok"><span class="badge-dot"></span> Clear</span></div></div>
+        <div class="hud-panel glass-panel"><div class="hud-panel-title"><span class="icon">📡</span> GPS Status</div><div class="hud-value" id="hud-gps-val">Standby</div><div class="hud-sub" id="hud-gps-coord">—</div></div>
+        <div class="hud-panel glass-panel"><div class="hud-panel-title"><span class="icon">🚨</span> Emergency</div><div class="hud-value" id="hud-emg-val">Inactive</div><div id="hud-emg-badge"><span class="status-badge badge-ok"><span class="badge-dot"></span> Standby</span></div></div>
+      </div>
+      <div class="sim-bottom">
+        <div class="glass-panel"><div class="hud-panel-title"><span class="icon">📋</span> System Log</div><div class="sys-log" id="sysLog"></div></div>
+        <div class="glass-panel"><div class="hud-panel-title"><span class="icon">📊</span> Sensor Telemetry</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--font-mono);font-size:0.73rem;">
+            <div><span style="color:var(--text-dim)">Accel X:</span> <span id="telAccelX" style="color:var(--cyan)">0.00</span> g</div>
+            <div><span style="color:var(--text-dim)">Accel Y:</span> <span id="telAccelY" style="color:var(--cyan)">0.00</span> g</div>
+            <div><span style="color:var(--text-dim)">Gyro Z:</span> <span id="telGyroZ" style="color:var(--cyan)">0.0</span> °/s</div>
+            <div><span style="color:var(--text-dim)">Speed:</span> <span id="telSpeed" style="color:var(--cyan)">0</span> km/h</div>
+            <div><span style="color:var(--text-dim)">Blink Rate:</span> <span id="telBlink" style="color:var(--cyan)">—</span></div>
+            <div><span style="color:var(--text-dim)">BAC Level:</span> <span id="telBAC" style="color:var(--cyan)">0.00</span>%</div>
+          </div>
+        </div>
+      </div>
+      <div class="sim-controls glass-panel">
+        <button class="ctrl-btn play-btn" id="btnPlayPause" onclick="togglePlayPause()">⏸ Pause</button>
+        <div class="speed-group"><span class="speed-label">Speed:</span>
+          <button class="ctrl-btn active" data-speed="1" onclick="setSpeed(1, this)">1×</button>
+          <button class="ctrl-btn" data-speed="2" onclick="setSpeed(2, this)">2×</button>
+          <button class="ctrl-btn" data-speed="4" onclick="setSpeed(4, this)">4×</button>
+        </div>
+        <div class="trigger-group"><span class="trigger-label">Trigger:</span>
+          <select class="trigger-select" id="triggerSelect"><option value="">— Select —</option><option value="helmet_remove">Helmet Removed</option><option value="fatigue">Fatigue</option><option value="alcohol">Alcohol</option><option value="accident">Accident</option></select>
+          <button class="ctrl-btn" onclick="triggerManualEvent()">⚡ Fire</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== PAGE 3: SYSTEM ARCHITECTURE ========== -->
+<section class="page" id="page-architecture">
+  <div class="arch-page">
+
+    <!-- 3D Interactive Helmet -->
+    <h2 class="section-title" style="text-align:center;margin-bottom:24px;">Interactive 3D Helmet Model</h2>
+    <div class="helmet3d-section">
+      <div class="helmet3d-wrapper">
+        <div class="helmet-canvas-wrap glass-panel" id="canvas-container" style="padding:0;">
+          <canvas id="helmetCanvas"></canvas>
+          <div class="canvas-label">Drag to rotate · Scroll to zoom</div>
+        </div>
+        <div class="helmet-controls-wrap">
+          <!-- Toggles -->
+          <div class="glass-panel">
+            <div class="hud-panel-title"><span class="icon">🎛️</span> Sensor Toggles</div>
+            <div class="toggle-grid">
+              <div class="toggle-btn" id="tog-helmet" onclick="toggle3D('helmet')"><div class="toggle-icon">🪖</div><div class="toggle-switch"></div><div class="toggle-label">Helmet Detection</div></div>
+              <div class="toggle-btn" id="tog-alcohol" onclick="toggle3D('alcohol')"><div class="toggle-icon">🍺</div><div class="toggle-switch"></div><div class="toggle-label">Alcohol Detection</div></div>
+              <div class="toggle-btn" id="tog-drowsy" onclick="toggle3D('drowsy')"><div class="toggle-icon">😴</div><div class="toggle-switch"></div><div class="toggle-label">Drowsiness Detection</div></div>
+              <div class="toggle-btn" id="tog-gps" onclick="toggle3D('gps')"><div class="toggle-icon">📡</div><div class="toggle-switch"></div><div class="toggle-label">GPS Module</div></div>
+              <div class="toggle-btn" id="tog-gsm" onclick="toggle3D('gsm')"><div class="toggle-icon">📱</div><div class="toggle-switch"></div><div class="toggle-label">GSM Module</div></div>
+              <div class="toggle-btn" id="tog-crash" onclick="toggle3D('crash')"><div class="toggle-icon">💥</div><div class="toggle-switch"></div><div class="toggle-label">Crash Detection</div></div>
+              <div class="toggle-btn" id="tog-visor" onclick="toggleVisor()"><div class="toggle-icon">🥽</div><div class="toggle-switch"></div><div class="toggle-label">Open Visor</div></div>
+              <div class="toggle-btn" id="tog-cutaway" onclick="toggleCutaway()"><div class="toggle-icon">✂️</div><div class="toggle-switch"></div><div class="toggle-label">Cutaway View</div></div>
+            </div>
+          </div>
+
+          <!-- Drowsiness Eye -->
+          <div class="drowsy-section glass-panel" id="drowsySection">
+            <div class="hud-panel-title"><span class="icon">👁️</span> Drowsiness Monitor</div>
+            <div class="eye-graphic-wrap">
+              <svg class="eye-svg" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
+                <!-- Eye white -->
+                <ellipse cx="60" cy="30" rx="45" ry="22" fill="rgba(255,255,255,0.08)" stroke="var(--cyan)" stroke-width="1.5"/>
+                <!-- Iris -->
+                <circle cx="60" cy="30" r="14" fill="rgba(0,229,255,0.15)" stroke="var(--cyan)" stroke-width="1.5"/>
+                <!-- Pupil -->
+                <circle cx="60" cy="30" r="6" fill="var(--cyan)" id="eyePupil"/>
+                <!-- Eyelid -->
+                <ellipse class="eyelid-top" id="eyelidTop" cx="60" cy="10" rx="46" ry="12" fill="var(--bg-primary)" stroke="var(--cyan)" stroke-width="1.5"/>
+              </svg>
+              <div class="drowsy-alert-banner" id="drowsyAlert">🚨 DROWSINESS DETECTED — Alert Sent to Rider</div>
+            </div>
+          </div>
+
+          <!-- Stats Dashboard -->
+          <div class="glass-panel">
+            <div class="hud-panel-title"><span class="icon">📊</span> Live Stats</div>
+            <div class="stats-dashboard">
+              <div class="stat-card"><div class="stat-card-label">Helmet Status</div><div class="stat-card-value" id="stat-helmet" style="color:var(--text-dim);">Not Worn</div><div class="stat-card-sub">IR Sensor</div></div>
+              <div class="stat-card"><div class="stat-card-label">Alcohol Level</div><div class="stat-card-value" id="stat-alcohol" style="color:var(--neon-green);">0.00 <small>BrAC</small></div><div class="stat-card-sub">MQ-3 Sensor</div></div>
+              <div class="stat-card"><div class="stat-card-label">Drowsiness</div><div class="stat-card-value" id="stat-drowsy" style="color:var(--neon-green);">Alert</div><div class="stat-card-sub">Eye Blink Rate</div></div>
+              <div class="stat-card"><div class="stat-card-label">GPS Signal</div><div class="stat-card-value" id="stat-gps" style="color:var(--text-dim);">Inactive</div><div class="stat-card-sub">NEO-6M</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Block Diagram -->
+    <h2 class="section-title" style="text-align:center;margin-bottom:32px;">System Architecture — Block Diagram</h2>
+    <div class="block-diagram glass-panel" style="padding:40px 30px;">
+      <div class="block-col"><div class="block-col-label">📥 Inputs</div><div class="block-node block-input">🔴 Helmet Wear Sensor<br><small style="opacity:0.6">(IR / Switch)</small></div><div class="block-node block-input">👁️ Fatigue Sensor<br><small style="opacity:0.6">(Eye Blink / IR)</small></div><div class="block-node block-input">📐 MPU6050<br><small style="opacity:0.6">(Accelerometer + Gyroscope)</small></div><div class="block-node block-input">🔋 Power Supply<br><small style="opacity:0.6">(Battery)</small></div></div>
+      <div class="block-center-col"><div class="block-node block-center">⚙️ Microcontroller<br>(Arduino / ESP32)</div><div style="width:2px;height:30px;background:rgba(255,214,0,0.3);"></div><div class="block-node block-ignition">🔌 Ignition Control<br><small style="opacity:0.6">(Relay Module)</small></div><div style="width:2px;height:20px;background:rgba(255,214,0,0.2);"></div><div class="block-node block-ignition" style="opacity:0.7;">🏍️ Bike Ignition</div></div>
+      <div class="block-col"><div class="block-col-label">📤 Outputs</div><div class="block-node block-output">📡 GPS Module<br><small style="opacity:0.6">(NEO-6M)</small></div><div class="block-node block-output">📱 GSM Module<br><small style="opacity:0.6">(SIM800L)</small></div><div class="block-node block-output">🔔 Buzzer<br><small style="opacity:0.6">(Piezo Alert)</small></div><div class="block-node block-output">🖥️ LCD Display<br><small style="opacity:0.6">(16×2 / OLED)</small></div></div>
+    </div>
+
+    <!-- Helmet Diagrams -->
+    <h2 class="section-title" style="text-align:center;margin:50px 0 32px;">Prototype & Sensor Placement</h2>
+    <div class="helmet-diagrams">
+      <div class="helmet-diagram-card glass-panel">
+        <h4>Side View — External Sensors</h4>
+        <svg class="helmet-svg" viewBox="0 0 350 320" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 100,200 Q 80,180 80,130 Q 80,60 175,40 Q 270,60 270,130 Q 270,180 250,200 Q 240,220 230,230 L 120,230 Q 110,220 100,200 Z" fill="rgba(0,229,255,0.05)" stroke="var(--cyan)" stroke-width="2.5"/>
+          <path d="M 240,130 Q 270,140 265,170 Q 260,195 240,210 L 235,190 Q 250,170 245,145 Z" fill="rgba(0,229,255,0.08)" stroke="var(--cyan)" stroke-width="1.5" opacity="0.6"/>
+          <path d="M 110,150 Q 175,140 250,150" stroke="var(--cyan)" stroke-width="1" fill="none" opacity="0.3"/>
+          <circle cx="255" cy="155" r="4" fill="var(--neon-pink)"/><line x1="259" y1="155" x2="310" y2="120" stroke="var(--neon-pink)" stroke-width="1" stroke-dasharray="3 2"/><text x="280" y="112" fill="var(--neon-pink)" font-family="var(--font-mono)" font-size="9" text-anchor="start">Fatigue Sensor</text><text x="280" y="123" fill="var(--text-dim)" font-family="var(--font-mono)" font-size="7" text-anchor="start">(Eye Blink / IR)</text>
+          <circle cx="140" cy="215" r="4" fill="var(--blue)"/><line x1="140" y1="219" x2="60" y2="265" stroke="var(--blue)" stroke-width="1" stroke-dasharray="3 2"/><text x="15" y="262" fill="var(--blue)" font-family="var(--font-mono)" font-size="9">Helmet Wear Sensor</text><text x="15" y="273" fill="var(--text-dim)" font-family="var(--font-mono)" font-size="7">(IR / Switch)</text>
+          <circle cx="120" cy="160" r="4" fill="var(--neon-yellow)"/><line x1="116" y1="160" x2="40" y2="140" stroke="var(--neon-yellow)" stroke-width="1" stroke-dasharray="3 2"/><text x="10" y="135" fill="var(--neon-yellow)" font-family="var(--font-mono)" font-size="9">Buzzer</text><text x="10" y="146" fill="var(--text-dim)" font-family="var(--font-mono)" font-size="7">(Piezo Alert)</text>
+        </svg>
+      </div>
+      <div class="helmet-diagram-card glass-panel">
+        <h4>Back / Inside View — Internal Components</h4>
+        <svg class="helmet-svg" viewBox="0 0 350 320" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 100,210 Q 80,180 80,130 Q 80,60 175,40 Q 270,60 270,130 Q 270,180 250,210 L 240,230 Q 175,240 110,230 Z" fill="rgba(0,229,255,0.05)" stroke="var(--cyan)" stroke-width="2.5"/>
+          <line x1="175" y1="45" x2="175" y2="235" stroke="var(--cyan)" stroke-width="0.5" opacity="0.2"/>
+          <path d="M 115,210 Q 100,180 100,135 Q 100,80 175,60 Q 250,80 250,135 Q 250,180 235,210 Q 175,225 115,210 Z" fill="none" stroke="var(--text-dim)" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
+          <rect x="155" y="80" width="40" height="25" rx="3" fill="rgba(0,255,136,0.1)" stroke="var(--neon-green)" stroke-width="1.5"/><text x="175" y="96" fill="var(--neon-green)" font-family="var(--font-mono)" font-size="7" text-anchor="middle">MPU</text><line x1="195" y1="90" x2="290" y2="60" stroke="var(--neon-green)" stroke-width="1" stroke-dasharray="3 2"/><text x="245" y="52" fill="var(--neon-green)" font-family="var(--font-mono)" font-size="9">MPU6050</text><text x="245" y="63" fill="var(--text-dim)" font-family="var(--font-mono)" font-size="7">Accel + Gyro</text>
+          <rect x="145" y="120" width="60" height="22" rx="3" fill="rgba(0,229,255,0.08)" stroke="var(--cyan)" stroke-width="1.5"/><text x="175" y="135" fill="var(--cyan)" font-family="var(--font-mono)" font-size="7" text-anchor="middle">GPS</text><line x1="205" y1="131" x2="290" y2="115" stroke="var(--cyan)" stroke-width="1" stroke-dasharray="3 2"/><text x="255" y="108" fill="var(--cyan)" font-family="var(--font-mono)" font-size="9">GPS (NEO-6M)</text>
+          <rect x="140" y="155" width="70" height="22" rx="3" fill="rgba(255,214,0,0.08)" stroke="var(--neon-yellow)" stroke-width="1.5"/><text x="175" y="170" fill="var(--neon-yellow)" font-family="var(--font-mono)" font-size="7" text-anchor="middle">GSM</text><line x1="210" y1="166" x2="290" y2="166" stroke="var(--neon-yellow)" stroke-width="1" stroke-dasharray="3 2"/><text x="255" y="160" fill="var(--neon-yellow)" font-family="var(--font-mono)" font-size="9">GSM (SIM800L)</text>
+          <rect x="148" y="192" width="54" height="28" rx="3" fill="rgba(0,229,255,0.12)" stroke="var(--cyan)" stroke-width="2"/><text x="175" y="210" fill="var(--cyan)" font-family="var(--font-mono)" font-size="8" text-anchor="middle">ESP32</text><line x1="148" y1="206" x2="55" y2="250" stroke="var(--cyan)" stroke-width="1" stroke-dasharray="3 2"/><text x="15" y="248" fill="var(--cyan)" font-family="var(--font-mono)" font-size="9">ESP32 MCU</text><text x="15" y="259" fill="var(--text-dim)" font-family="var(--font-mono)" font-size="7">Main Controller</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Data Flow Diagram -->
+    <h2 class="section-title" style="text-align:center;margin:50px 0 32px;">Data Flow Diagram</h2>
+    <div class="glass-panel" style="padding:36px 24px;">
+      <div class="dataflow">
+        <div class="dataflow-col"><div class="dataflow-col-label">Sensors</div><div class="df-node df-sensor">🔴 Helmet Wear<br>Sensor</div><div class="df-node df-sensor">👁️ Fatigue<br>Sensor</div><div class="df-node df-sensor">📐 MPU6050<br>Accel + Gyro</div></div>
+        <div class="dataflow-col"><div class="dataflow-col-label">Microcontroller</div><div class="df-node df-mcu" style="padding:24px 14px;">⚙️ ESP32<br><small style="opacity:0.6;font-size:0.65rem">Signal Processing<br>Decision Engine</small></div></div>
+        <div class="dataflow-col"><div class="dataflow-col-label">Output Modules</div><div class="df-node df-output">📡 GPS (NEO-6M)</div><div class="df-node df-output">📱 GSM (SIM800L)</div><div class="df-node df-output">🔔 Buzzer</div><div class="df-node df-output">🖥️ LCD Display</div><div class="df-node df-output">🔌 Ignition Relay</div></div>
+        <div class="dataflow-col"><div class="dataflow-col-label">User / External</div><div class="df-node df-external">📞 Emergency<br>Contacts</div><div class="df-node df-external">🗺️ Location<br>on Map</div></div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-line legend-data"></div> Data Flow</div>
+        <div class="legend-item"><div class="legend-control"></div> Control Signal</div>
+        <div class="legend-item"><div class="legend-line legend-alert"></div> Alert Flow</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== PAGE 4: DECISION FLOWCHART ========== -->
+<section class="page" id="page-flowchart">
+  <div class="flow-page">
+    <h2 class="section-title" style="text-align:center;margin-bottom:36px;">Decision Flowchart — Algorithm Logic</h2>
+    <div class="glass-panel" style="padding:40px 20px;">
+      <div class="flowchart">
+        <div class="fc-node fc-start">▶ START</div><div class="fc-arrow"></div>
+        <div class="fc-node fc-process">System Initialization<br><small style="opacity:0.6">Power On — All Sensors Boot</small></div><div class="fc-arrow"></div>
+        <div class="fc-decision"><div class="fc-decision-text">Helmet<br>Worn?</div></div>
+        <div style="display:flex;gap:0;align-items:flex-start;width:100%;max-width:850px;margin-top:-8px;">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+            <div class="fc-branch-label" style="color:var(--neon-pink);background:rgba(255,51,102,0.1);">✗ NO</div><div class="fc-arrow fc-arrow-short"></div>
+            <div class="fc-node fc-action" style="font-size:0.73rem;">Buzzer ON<br>Display: "Wear Helmet"</div><div class="fc-arrow fc-arrow-short"></div>
+            <div class="fc-node fc-process" style="font-size:0.72rem;padding:10px 16px;opacity:0.7;">↩ Loop Back to Check</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+            <div class="fc-branch-label" style="color:var(--neon-green);background:rgba(0,255,136,0.1);">✓ YES</div><div class="fc-arrow fc-arrow-short"></div>
+            <div class="fc-node fc-process">Start Engine<br><small style="opacity:0.6">Allow Ignition</small></div><div class="fc-arrow fc-arrow-short"></div>
+            <div class="fc-node fc-process" style="border-color:rgba(0,229,255,0.4);color:var(--cyan);">Monitor Rider<br>Continuously</div>
+            <div class="fc-arrow"></div>
+            
+            <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;justify-content:center;width:100%;">
+              <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:180px;">
+                <div class="fc-decision" style="width:100px;height:100px;"><div class="fc-decision-text" style="font-size:0.65rem;">Fatigue<br>Detected?</div></div>
+                <div style="display:flex;gap:12px;margin-top:-4px;">
+                  <div style="display:flex;flex-direction:column;align-items:center;"><div class="fc-branch-label" style="color:var(--neon-green);background:rgba(0,255,136,0.1);font-size:0.55rem;padding:2px 6px;">NO</div><div class="fc-arrow fc-arrow-short"></div><div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim);">Continue</div></div>
+                  <div style="display:flex;flex-direction:column;align-items:center;"><div class="fc-branch-label" style="color:var(--neon-pink);background:rgba(255,51,102,0.1);font-size:0.55rem;padding:2px 6px;">YES</div><div class="fc-arrow fc-arrow-short"></div><div class="fc-node fc-action" style="font-size:0.65rem;padding:8px 10px;">Alert Rider<br>"Take Break"</div></div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:180px;">
+                <div class="fc-decision" style="width:100px;height:100px;"><div class="fc-decision-text" style="font-size:0.65rem;">Accident<br>Detected?</div></div>
+                <div style="display:flex;gap:12px;margin-top:-4px;">
+                  <div style="display:flex;flex-direction:column;align-items:center;"><div class="fc-branch-label" style="color:var(--neon-green);background:rgba(0,255,136,0.1);font-size:0.55rem;padding:2px 6px;">NO</div><div class="fc-arrow fc-arrow-short"></div><div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--text-dim);">Continue</div></div>
+                  <div style="display:flex;flex-direction:column;align-items:center;"><div class="fc-branch-label" style="color:var(--neon-pink);background:rgba(255,51,102,0.1);font-size:0.55rem;padding:2px 6px;">YES</div><div class="fc-arrow fc-arrow-short"></div><div class="fc-node fc-action" style="font-size:0.65rem;padding:8px 10px;">Get Location<br>(GPS)</div><div class="fc-arrow fc-arrow-short" style="height:10px;"></div><div class="fc-node fc-action" style="font-size:0.65rem;padding:8px 10px;">Send Alert<br><small style="opacity:0.6">(GSM)</small></div></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="fc-arrow" style="height:30px;"></div>
+            <div class="fc-node fc-end">⏹ END / CONTINUE LOOP</div>
+          </div>
+        </div>
+      </div>
+      <div class="fc-legend">
+        <div class="fc-legend-item"><div class="fc-legend-shape oval start-shape"></div> Start / End</div>
+        <div class="fc-legend-item"><div class="fc-legend-shape process-shape"></div> Process</div>
+        <div class="fc-legend-item"><div class="fc-legend-shape diamond decision-shape"></div> Decision</div>
+        <div class="fc-legend-item"><div class="fc-legend-shape action-shape"></div> Action / Output</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="site-footer">
+  <div class="footer-logo">⬡ CIPHER</div>
+  <div class="footer-text">
+    <span>Cognitive Ignition & Proximity Helmet for Enhanced Rider Safety</span><br>
+    MSRIT — Department of AI & Data Science · Interdisciplinary Team Project · 2026<br>
+    Team Members: Kshitij, Ali, Pranav, Abdul, Abhishek, Naman · Guide: Harshada Dongare
+  </div>
+</footer>
+
+<!-- ========== JAVASCRIPT ========== -->
+<script>
+/* ============================================
+   LOADING SCREEN
+   ============================================ */
+setTimeout(() => {
+  document.getElementById('loadingScreen').classList.add('hidden');
+}, 2500);
+
+/* ============================================
+   ROUTER
+   ============================================ */
+function navigateTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById('page-' + page);
+  if (target) target.classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const link = document.querySelector(`.nav-link[data-page="${page}"]`);
+  if (link) link.classList.add('active');
+  document.getElementById('navLinks').classList.remove('open');
+  if (page === 'simulation' && !sim.started) sim.start();
+  if (page === 'architecture' && !helmet3DInitialized) initHelmet3D();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+window.addEventListener('hashchange', () => { navigateTo(location.hash.slice(1) || 'overview'); });
+document.getElementById('navMobileBtn').addEventListener('click', () => { document.getElementById('navLinks').classList.toggle('open'); });
+
+// Initialize 360 Viewer — Individual Frame Approach (40 frames)
+function init360Viewer() {
+  const viewer = document.getElementById('viewer360');
+  const img = document.getElementById('viewer360Img');
+  const btnLeft = document.getElementById('btn360-left');
+  const btnRight = document.getElementById('btn360-right');
+  const loader = document.getElementById('viewer360Loader');
+  if(!viewer || !img) return;
+
+  const totalFrames = 40;
+  let currentFrame = 0;
+  const frames = [];
+  let loaded = 0;
+
+  // Preload all frames
+  for (let i = 0; i < totalFrames; i++) {
+    const image = new Image();
+    image.src = `images/rotate/0_${i}.jpg`;
+    image.onload = () => {
+      loaded++;
+      const pct = Math.round((loaded / totalFrames) * 100);
+      if (loader) loader.textContent = `Loading ${pct}%`;
+      if (loaded === totalFrames && loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.style.display = 'none', 300);
+      }
+    };
+    frames.push(image);
+  }
+
+  const updateFrame = () => {
+    const idx = ((currentFrame % totalFrames) + totalFrames) % totalFrames;
+    img.src = frames[idx].src;
+  };
+
+  // Arrow buttons
+  btnLeft.addEventListener('click', () => { currentFrame = (currentFrame - 1 + totalFrames) % totalFrames; updateFrame(); });
+  btnRight.addEventListener('click', () => { currentFrame = (currentFrame + 1) % totalFrames; updateFrame(); });
+
+  // Mouse drag
+  let isDragging = false;
+  let startX = 0;
+  let startFrame = 0;
+  let velocity = 0;
+  let lastX = 0;
+  let lastTime = 0;
+  let inertiaRAF = null;
+
+  viewer.addEventListener('mousedown', (e) => {
+    isDragging = true; startX = e.clientX; startFrame = currentFrame;
+    lastX = e.clientX; lastTime = Date.now();
+    velocity = 0; if (inertiaRAF) cancelAnimationFrame(inertiaRAF);
+    e.preventDefault();
+  });
+  document.addEventListener('mouseup', () => {
+    if (isDragging) { isDragging = false; startInertia(); }
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const now = Date.now();
+    const dt = now - lastTime;
+    if (dt > 0) velocity = (e.clientX - lastX) / dt;
+    lastX = e.clientX; lastTime = now;
+    const diff = e.clientX - startX;
+    const frameShift = Math.floor(diff / 12);
+    currentFrame = ((startFrame - frameShift) % totalFrames + totalFrames) % totalFrames;
+    updateFrame();
+  });
+
+  // Touch drag
+  viewer.addEventListener('touchstart', (e) => {
+    isDragging = true; startX = e.touches[0].clientX; startFrame = currentFrame;
+    lastX = e.touches[0].clientX; lastTime = Date.now();
+    velocity = 0; if (inertiaRAF) cancelAnimationFrame(inertiaRAF);
+  }, { passive: true });
+  document.addEventListener('touchend', () => {
+    if (isDragging) { isDragging = false; startInertia(); }
+  });
+  document.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    const now = Date.now();
+    const dt = now - lastTime;
+    const tx = e.touches[0].clientX;
+    if (dt > 0) velocity = (tx - lastX) / dt;
+    lastX = tx; lastTime = now;
+    const diff = tx - startX;
+    const frameShift = Math.floor(diff / 12);
+    currentFrame = ((startFrame - frameShift) % totalFrames + totalFrames) % totalFrames;
+    updateFrame();
+  }, { passive: true });
+
+  // Inertia / momentum after release
+  function startInertia() {
+    if (Math.abs(velocity) < 0.02) return;
+    let v = velocity * 8;
+    function step() {
+      v *= 0.92;
+      if (Math.abs(v) < 0.15) return;
+      const shift = v > 0 ? -1 : 1;
+      if (Math.abs(v) > 0.3) {
+        currentFrame = ((currentFrame + shift) % totalFrames + totalFrames) % totalFrames;
+        updateFrame();
+      }
+      inertiaRAF = requestAnimationFrame(step);
+    }
+    inertiaRAF = requestAnimationFrame(step);
+  }
+}
+init360Viewer();
+
+window.addEventListener('resize', () => {
+  if (helmetCamera && helmetRenderer) {
+    const c = document.getElementById('canvas-container');
+    helmetCamera.aspect = c.clientWidth / c.clientHeight;
+    helmetCamera.updateProjectionMatrix();
+    helmetRenderer.setSize(c.clientWidth, c.clientHeight);
+  }
+});
+
+/* ============================================
+   SIMULATION ENGINE
+   ============================================ */
+const sim = {
+  state: 'idle', started: false, paused: false, speed: 1,
+  eventTimer: null, stateTimer: null,
+  anomalyList: ['fatigue', 'alcohol', 'accident'], lastAnomalyIndex: -1,
+  telemetryInterval: null,
+  el: {},
+  init() {
+    ['bikeContainer','rearSpokes','frontSpokes','riderGroup','helmetShape','headlightGlow','headlightBulb','roadLines','sceneBg','bannerHelmet','bannerFatigue','bannerAlcohol','bannerAccident','bannerOk','emergencyPanel','sysLog'].forEach(id => {
+      this.el[id] = document.getElementById(id);
+    });
+  },
+  start() {
+    this.init(); this.started = true;
+    this.setState('idle');
+    this.addLog('System powered on — CIPHER v1.0', 'info');
+    this.addLog('Performing sensor initialization...', 'info');
+    this.delay(() => { this.addLog('All sensors online. Checking helmet...', 'info'); this.setState('no_helmet'); }, 1000);
+    this.startTelemetry();
+  },
+  delay(fn, ms) { return this.stateTimer = setTimeout(fn, ms / this.speed); },
+  clearTimers() { clearTimeout(this.stateTimer); clearTimeout(this.eventTimer); },
+  setState(s) { if (this.paused && s !== this.state) return; const prev = this.state; this.state = s; this.updateVisuals(s); this.updateHUD(s); this.runStateLogic(s); },
+  runStateLogic(state) {
+    switch (state) {
+      case 'no_helmet': this.addLog('⚠ Helmet NOT detected — Ignition LOCKED', 'danger'); this.delay(() => { this.addLog('Rider puts on helmet...', 'info'); this.setState('helmet_on'); }, 2500); break;
+      case 'helmet_on': this.addLog('✅ Helmet detected — IR sensor confirmed', 'ok'); this.delay(() => { this.addLog('Ignition unlocked — Starting engine', 'ok'); this.setState('riding'); }, 1500); break;
+      case 'riding': this.addLog('🏍️ Riding — All systems nominal', 'ok'); this.scheduleRandomAnomaly(); break;
+      case 'fatigue': this.addLog('😴 FATIGUE DETECTED — Eye blink rate abnormal', 'warn'); this.addLog('🔔 Buzzer activated', 'warn'); this.delay(() => { this.addLog('Rider alert acknowledged', 'ok'); this.setState('riding'); }, 4000); break;
+      case 'alcohol': this.addLog('🍺 ALCOHOL/ANOMALY DETECTED', 'danger'); this.delay(() => { this.addLog('Anomaly resolved', 'ok'); this.setState('riding'); }, 5000); break;
+      case 'accident': this.addLog('💥 ACCIDENT DETECTED — MPU6050 impact', 'danger'); this.runEmergencySequence(); break;
+      case 'helmet_remove': this.addLog('⚠ HELMET REMOVED — Ignition LOCKING!', 'danger'); this.addLog('🔒 Fuel cut-off initiated — bike decelerating...', 'warn'); this.delay(() => { this.addLog('Rider replaces helmet', 'ok'); this.setState('helmet_on'); }, 6000); break;
+    }
+  },
+  scheduleRandomAnomaly() {
+    clearTimeout(this.eventTimer);
+    const d = 8000 + Math.random() * 7000;
+    this.eventTimer = setTimeout(() => {
+      if (this.state !== 'riding' || this.paused) return;
+      let idx; do { idx = Math.floor(Math.random() * this.anomalyList.length); } while (idx === this.lastAnomalyIndex && this.anomalyList.length > 1);
+      this.lastAnomalyIndex = idx; this.setState(this.anomalyList[idx]);
+    }, d / this.speed);
+  },
+  runEmergencySequence() {
+    const panel = this.el.emergencyPanel;
+    const steps = [document.getElementById('emgStep1'), document.getElementById('emgStep2'), document.getElementById('emgStep3'), document.getElementById('emgStep4')];
+    steps.forEach(s => { s.classList.remove('visible'); s.querySelector('.emg-step-num').classList.remove('done'); });
+    document.getElementById('emgTime').textContent = this.getTimestamp();
+    panel.classList.add('active');
+    const delays = [500, 2000, 3500, 5500];
+    const msgs = ['🚨 Impact confirmed', '📡 GPS lock: 12.9716°N, 77.5946°E', '📱 SMS composed', '✅ SMS dispatched'];
+    delays.forEach((d, i) => {
+      this.delay(() => {
+        steps[i].classList.add('visible');
+        if (i > 0) steps[i-1].querySelector('.emg-step-num').classList.add('done');
+        this.addLog(msgs[i], i < 2 ? 'danger' : 'ok');
+        if (i === 3) { steps[i].querySelector('.emg-step-num').classList.add('done'); this.delay(() => { panel.classList.remove('active'); this.addLog('🏍️ Scene reset', 'info'); this.setState('reset'); }, 3000); }
+      }, d);
+    });
+  },
+  updateVisuals(state) {
+    const { bikeContainer: bc, roadLines: rl, sceneBg: bg, rearSpokes: rs, frontSpokes: fs, riderGroup: rg, helmetShape: hl, headlightGlow: hg } = this.el;
+    bc.classList.remove('swerving', 'crashed', 'resetting'); rg.classList.remove('slumped'); this.hideAllBanners();
+    // Clear any ongoing deceleration
+    if (this._decelInterval) { clearInterval(this._decelInterval); this._decelInterval = null; }
+    const isMoving = ['riding', 'fatigue', 'alcohol'].includes(state);
+    rs.classList.toggle('spinning', isMoving); fs.classList.toggle('spinning', isMoving);
+    rl.classList.toggle('scrolling', isMoving); bg.classList.toggle('scrolling', isMoving);
+    hg.classList.toggle('on', state !== 'idle' && state !== 'no_helmet');
+    hl.classList.toggle('visible', !['no_helmet', 'idle', 'helmet_remove'].includes(state));
+    switch (state) {
+      case 'no_helmet': this.el.bannerHelmet.classList.add('active'); break;
+      case 'helmet_on': this.el.bannerOk.classList.add('active'); break;
+      case 'riding': this.el.bannerOk.classList.add('active'); setTimeout(() => { if (this.state === 'riding') this.el.bannerOk.classList.remove('active'); }, 1500); break;
+      case 'fatigue': rg.classList.add('slumped'); this.el.bannerFatigue.classList.add('active'); break;
+      case 'alcohol': bc.classList.add('swerving'); this.el.bannerAlcohol.classList.add('active'); break;
+      case 'accident': bc.classList.add('crashed'); rs.classList.remove('spinning'); fs.classList.remove('spinning'); rl.classList.remove('scrolling'); bg.classList.remove('scrolling'); this.el.bannerAccident.classList.add('active'); break;
+      case 'helmet_remove': {
+        this.el.bannerHelmet.classList.add('active');
+        // Start moving then gradually decelerate to a stop
+        rs.classList.add('spinning'); fs.classList.add('spinning');
+        rl.classList.add('scrolling'); bg.classList.add('scrolling');
+        let decelStep = 0;
+        const totalSteps = 12;
+        const stepTime = 350;
+        this._decelInterval = setInterval(() => {
+          decelStep++;
+          const factor = Math.max(0, 1 - (decelStep / totalSteps));
+          const baseDur = 1.5 / this.speed;
+          const wheelDur = 0.5 / this.speed;
+          rl.style.animationDuration = (baseDur / Math.max(factor, 0.05)) + 's';
+          bg.style.animationDuration = (25 / this.speed / Math.max(factor, 0.05)) + 's';
+          rs.style.animationDuration = (wheelDur / Math.max(factor, 0.05)) + 's';
+          fs.style.animationDuration = (wheelDur / Math.max(factor, 0.05)) + 's';
+          if (decelStep >= totalSteps) {
+            clearInterval(this._decelInterval); this._decelInterval = null;
+            rs.classList.remove('spinning'); fs.classList.remove('spinning');
+            rl.classList.remove('scrolling'); bg.classList.remove('scrolling');
+            this.addLog('🛑 Bike stopped — Ignition locked', 'danger');
+          }
+        }, stepTime / this.speed);
+        break;
+      }
+      case 'reset': bc.classList.add('resetting'); this.delay(() => { bc.classList.remove('resetting'); this.setState('riding'); }, 1200); break;
+    }
+    this.updateAnimationSpeed();
+  },
+  hideAllBanners() { ['bannerHelmet','bannerFatigue','bannerAlcohol','bannerAccident','bannerOk'].forEach(b => this.el[b].classList.remove('active')); },
+  updateHUD(state) {
+    const setH = (id, v, html) => { const ve = document.getElementById(`hud-${id}-val`); const be = document.getElementById(`hud-${id}-badge`); if(ve) ve.textContent = v; if(be) be.innerHTML = html; };
+    const noHelmet = ['no_helmet','idle','helmet_remove'].includes(state);
+    setH('helmet', noHelmet ? 'Not Detected' : 'Detected ✓', `<span class="status-badge ${noHelmet?'badge-danger':'badge-ok'}"><span class="badge-dot"></span> ${noHelmet?'No Helmet':'Secured'}</span>`);
+    const rm = {idle:['Idle','badge-info','Standby'],no_helmet:['No Helmet','badge-warn','Non-Compliant'],helmet_on:['Ready','badge-ok','Compliant'],riding:['Riding','badge-ok','Normal'],fatigue:['⚠ DROWSY','badge-warn','Fatigued'],alcohol:['⚠ IMPAIRED','badge-danger','Anomaly'],accident:['💥 CRASH','badge-danger','Emergency'],helmet_remove:['⚠ Violation','badge-danger','Violation'],reset:['Recovering','badge-info','Resetting']};
+    const r = rm[state]||rm.idle; setH('rider', r[0], `<span class="status-badge ${r[1]}"><span class="badge-dot"></span> ${r[2]}</span>`);
+    setH('ignition', noHelmet?'Locked':'Unlocked', `<span class="status-badge ${noHelmet?'badge-danger':'badge-ok'}"><span class="badge-dot"></span> ${noHelmet?'Locked':'Active'}</span>`);
+    setH('accident', state==='accident'?'💥 DETECTED':'No Incident', `<span class="status-badge ${state==='accident'?'badge-danger':'badge-ok'}"><span class="badge-dot"></span> ${state==='accident'?'Impact!':'Clear'}</span>`);
+    const gv = document.getElementById('hud-gps-val'), gc = document.getElementById('hud-gps-coord');
+    if(state==='accident'){gv.textContent='LOCK ACQUIRED';gc.textContent='12.9716°N, 77.5946°E';gc.style.color='var(--cyan)';}else if(['riding','fatigue','alcohol'].includes(state)){gv.textContent='Tracking';gc.textContent='12.97°N, 77.59°E';gc.style.color='var(--text-dim)';}else{gv.textContent='Standby';gc.textContent='—';}
+    setH('emg', state==='accident'?'ACTIVE ⚠':'Inactive', `<span class="status-badge ${state==='accident'?'badge-danger':'badge-ok'}"><span class="badge-dot"></span> ${state==='accident'?'Dispatching':'Standby'}</span>`);
+  },
+  addLog(msg, type='info') { const e = document.createElement('div'); e.className = `log-entry log-${type}`; e.innerHTML = `<span class="log-time">${this.getTimestamp()}</span><span class="log-msg">${msg}</span>`; this.el.sysLog.appendChild(e); this.el.sysLog.scrollTop = this.el.sysLog.scrollHeight; while(this.el.sysLog.children.length > 80) this.el.sysLog.removeChild(this.el.sysLog.firstChild); },
+  getTimestamp() { return new Date().toLocaleTimeString('en-GB',{hour12:false}); },
+  updateAnimationSpeed() { const s = this.speed; this.el.roadLines.style.animationDuration=(1.5/s)+'s'; this.el.sceneBg.style.animationDuration=(25/s)+'s'; this.el.rearSpokes.style.animationDuration=(0.5/s)+'s'; this.el.frontSpokes.style.animationDuration=(0.5/s)+'s'; this.el.bikeContainer.style.animationDuration=(0.8/s)+'s'; },
+  startTelemetry() { clearInterval(this.telemetryInterval); this.telemetryInterval = setInterval(() => { if(!this.paused) this.updateTelemetry(); }, 500); },
+  updateTelemetry() {
+    const ids = {ax:'telAccelX',ay:'telAccelY',gz:'telGyroZ',sp:'telSpeed',bl:'telBlink',ba:'telBAC'};
+    const el = {}; for(let k in ids) el[k] = document.getElementById(ids[k]);
+    const riding = ['riding','fatigue','alcohol'].includes(this.state);
+    if(this.state==='accident'){el.ax.textContent=(8+Math.random()*4).toFixed(2);el.ax.style.color='var(--neon-pink)';el.ay.textContent=(6+Math.random()*3).toFixed(2);el.ay.style.color='var(--neon-pink)';el.gz.textContent=(200+Math.random()*100).toFixed(1);el.gz.style.color='var(--neon-pink)';el.sp.textContent='0';el.bl.textContent='—';el.ba.textContent='0.00';}
+    else if(this.state==='fatigue'){el.ax.textContent=(0.1+Math.random()*0.3).toFixed(2);el.ax.style.color='var(--cyan)';el.ay.textContent=(0.9+Math.random()*0.2).toFixed(2);el.ay.style.color='var(--cyan)';el.gz.textContent=(Math.random()*5).toFixed(1);el.gz.style.color='var(--cyan)';el.sp.textContent=Math.floor(35+Math.random()*10);el.bl.textContent='< 5/min ⚠';el.bl.style.color='var(--neon-yellow)';el.ba.textContent='0.00';}
+    else if(this.state==='alcohol'){el.ax.textContent=(0.3+Math.random()*0.8).toFixed(2);el.ax.style.color='var(--neon-yellow)';el.ay.textContent=(0.8+Math.random()*0.5).toFixed(2);el.ay.style.color='var(--neon-yellow)';el.gz.textContent=(15+Math.random()*20).toFixed(1);el.gz.style.color='var(--neon-yellow)';el.sp.textContent=Math.floor(25+Math.random()*20);el.bl.textContent=Math.floor(12+Math.random()*5)+'/min';el.bl.style.color='var(--cyan)';el.ba.textContent=(0.05+Math.random()*0.06).toFixed(2);el.ba.style.color='var(--neon-pink)';}
+    else if(riding){el.ax.textContent=(0.05+Math.random()*0.15).toFixed(2);el.ax.style.color='var(--cyan)';el.ay.textContent=(0.95+Math.random()*0.1).toFixed(2);el.ay.style.color='var(--cyan)';el.gz.textContent=(Math.random()*3).toFixed(1);el.gz.style.color='var(--cyan)';el.sp.textContent=Math.floor(40+Math.random()*15);el.bl.textContent=Math.floor(15+Math.random()*5)+'/min';el.bl.style.color='var(--cyan)';el.ba.textContent='0.00';el.ba.style.color='var(--cyan)';}
+    else{for(let k in el){el[k].style.color='var(--cyan)';} el.ax.textContent='0.00';el.ay.textContent='0.00';el.gz.textContent='0.0';el.sp.textContent='0';el.bl.textContent='—';el.ba.textContent='0.00';}
+  },
+};
+
+function togglePlayPause() {
+  const btn = document.getElementById('btnPlayPause'); sim.paused = !sim.paused;
+  if(sim.paused){btn.textContent='▶ Play';btn.classList.add('active');document.querySelectorAll('#simScene *, #bikeContainer *').forEach(e=>e.style.animationPlayState='paused');}
+  else{btn.textContent='⏸ Pause';btn.classList.remove('active');document.querySelectorAll('#simScene *, #bikeContainer *').forEach(e=>e.style.animationPlayState='running');if(sim.state==='riding')sim.scheduleRandomAnomaly();}
+}
+function setSpeed(s, btn) { sim.speed = s; document.querySelectorAll('.speed-group .ctrl-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); sim.updateAnimationSpeed(); sim.addLog(`⏩ Speed set to ${s}×`, 'info'); }
+function triggerManualEvent() { const sel = document.getElementById('triggerSelect'); const ev = sel.value; if(!ev) return; if(sim.state!=='riding'){sim.addLog('⚠ Wait for riding state','warn');return;} clearTimeout(sim.eventTimer); sim.addLog(`⚡ Manual: ${ev.replace('_',' ').toUpperCase()}`,'info'); sim.setState(ev); sel.value=''; }
+
+/* ============================================
+   THREE.JS — 3D HELMET (Rebuilt)
+   ============================================ */
+let helmet3DInitialized = false;
+let helmetScene, helmetCamera, helmetRenderer, helmetControls;
+let helmetGroup, domeMesh, visorMesh, chinMesh;
+let toggleStates = { helmet: false, alcohol: false, drowsy: false, gps: false, gsm: false, crash: false };
+let gpsPulseRings = [], gsmPulseRings = [];
+let sensorMeshes = {};
+let animObjects = {};
+let visorMeshRef = null;
+let visorOpen = false;
+let currentVisorAngle = 0;
+let targetVisorAngle = 0;
+let clipPlane = new THREE.Plane(new THREE.Vector3(1, 0, 0), 20); // Initial far away so no clipping
+
+// Helper: create a text sprite label
+function makeTextSprite(text, color) {
+  const canvas = document.createElement('canvas');
+  const sz = 256;
+  canvas.width = sz; canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.font = 'bold 16px "Inter", monospace';
+  ctx.fillStyle = color || '#00e5ff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, sz / 2, 32);
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.2, 0.3, 1);
+  return sprite;
+}
+
+// Helper: create a subtle high-tech sensor node
+function makeSensorNode(colorHex) {
+  const geo = new THREE.CylinderGeometry(0.06, 0.06, 0.04, 32);
+  const mat = new THREE.MeshPhongMaterial({ color: 0x111111, shininess: 100 });
+  const mesh = new THREE.Mesh(geo, mat);
+  
+  const ledGeo = new THREE.CircleGeometry(0.03, 32);
+  const ledMat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.2 });
+  const led = new THREE.Mesh(ledGeo, ledMat);
+  led.position.y = 0.021;
+  led.rotation.x = -Math.PI / 2;
+  mesh.add(led);
+  
+  // Convert hex to CSS string
+  const colorStr = '#' + colorHex.toString(16).padStart(6, '0');
+
+  // Subtle Glow
+  const canvas = document.createElement('canvas');
+  canvas.width = 64; canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, colorStr);
+  grad.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,64,64);
+  const tex = new THREE.CanvasTexture(canvas);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+  glow.scale.set(0.5, 0.5, 1);
+  glow.position.y = 0.05;
+  mesh.add(glow);
+  
+  mesh.userData = { led: led, glow: glow, baseColor: colorHex };
+  return mesh;
+}
+
+function initHelmet3D() {
+  if (helmet3DInitialized) return;
+  helmet3DInitialized = true;
+  const canvas = document.getElementById('helmetCanvas');
+  const wrap = document.getElementById('canvas-container');
+
+  helmetScene = new THREE.Scene();
+  helmetCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+  helmetCamera.position.set(2.8, 1.5, 4.2);
+
+  helmetRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  helmetRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  helmetRenderer.setClearColor(0x000000, 0);
+  helmetRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+  helmetRenderer.toneMappingExposure = 1.1;
+  helmetRenderer.localClippingEnabled = true; // Enable clipping planes
+
+  function resize() {
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    helmetRenderer.setSize(w, h);
+    helmetCamera.aspect = w / h;
+    helmetCamera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Lights
+  helmetScene.add(new THREE.AmbientLight(0x445566, 1.2));
+  const keyLight = new THREE.DirectionalLight(0xaabbee, 1.5);
+  keyLight.position.set(4, 6, 5);
+  helmetScene.add(keyLight);
+  const fillLight = new THREE.DirectionalLight(0x4466aa, 0.8);
+  fillLight.position.set(-4, 3, 2);
+  helmetScene.add(fillLight);
+  const rimLight = new THREE.DirectionalLight(0x00e5ff, 1.0);
+  rimLight.position.set(-2, 0, -4);
+  helmetScene.add(rimLight);
+  const bottomLight = new THREE.PointLight(0x003355, 0.8, 10);
+  bottomLight.position.set(0, -3, 2);
+  helmetScene.add(bottomLight);
+
+  // Controls
+  helmetControls = new THREE.OrbitControls(helmetCamera, canvas);
+  helmetControls.enableDamping = true;
+  helmetControls.dampingFactor = 0.08;
+  helmetControls.autoRotate = true;
+  helmetControls.autoRotateSpeed = 1.2;
+  helmetControls.minDistance = 3.5;
+  helmetControls.maxDistance = 9;
+  helmetControls.target.set(0, 0.1, 0);
+
+  // ===== BUILD HELMET FROM GLB =====
+  helmetGroup = new THREE.Group();
+
+  const gltfLoader = new THREE.GLTFLoader();
+  gltfLoader.load('models/helmet.glb', function(gltf) {
+    const loadedHelmet = gltf.scene;
+    
+    // Automatically scale the loaded model to fit roughly the same size as the old procedural helmet (radius ~1.4)
+    const box = new THREE.Box3().setFromObject(loadedHelmet);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    
+    if(maxDim > 0) {
+      const scaleFactor = 3.2 / maxDim; // Target size is roughly 3.2 units to match sensors
+      loadedHelmet.scale.set(scaleFactor, scaleFactor, scaleFactor);
+    }
+    
+    // Recalculate bounding box AFTER scaling to get correct center
+    const boxAfter = new THREE.Box3().setFromObject(loadedHelmet);
+    const centerAfter = boxAfter.getCenter(new THREE.Vector3());
+    
+    // Center it horizontally, shift slightly down to match sensor nodes
+    loadedHelmet.position.set(-centerAfter.x, -centerAfter.y + 0.1, -centerAfter.z);
+    
+    // The loaded model is facing backwards (-Z). Rotate it 180 degrees so the visor faces +Z
+    // This perfectly aligns the front face opening with the Eye Track & Alcohol sensors!
+    loadedHelmet.rotation.y = Math.PI;
+    
+    // Override materials to a sleek gray aesthetic and enable clipping
+    loadedHelmet.traverse((child) => {
+      if (child.name === 'Cover') {
+        visorMeshRef = child;
+      }
+      if (child.isMesh) {
+        child.material = new THREE.MeshStandardMaterial({
+          color: 0x999999, // Visible, premium sleek gray
+          roughness: 0.35,
+          metalness: 0.5,
+          side: THREE.DoubleSide,
+          clippingPlanes: [clipPlane],
+          clipShadows: true
+        });
+      }
+    });
+
+    helmetGroup.add(loadedHelmet);
+  }, 
+  // onProgress
+  function (xhr) {
+    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+  },
+  // onError
+  function (error) {
+    console.error('An error happened loading the GLB', error);
+  });
+
+  // ===== SENSOR NODES =====
+  // GPS Node (Top)
+  const gpsNode = makeSensorNode(0x00e5ff);
+  gpsNode.position.set(0, 1.38, -0.2);
+  gpsNode.rotation.x = -0.15;
+  helmetGroup.add(gpsNode);
+  const gpsLbl = makeTextSprite('GPS', '#00e5ff');
+  gpsLbl.position.set(0, 1.6, -0.2); helmetGroup.add(gpsLbl);
+  sensorMeshes.gps = gpsNode;
+
+  // GSM Node (Top Back)
+  const gsmNode = makeSensorNode(0xffd600);
+  gsmNode.position.set(0, 1.25, -0.6);
+  gsmNode.rotation.x = -0.4;
+  helmetGroup.add(gsmNode);
+  const gsmLbl = makeTextSprite('GSM', '#ffd600');
+  gsmLbl.position.set(0, 1.5, -0.7); helmetGroup.add(gsmLbl);
+  sensorMeshes.gsm = gsmNode;
+
+  // Crash / MPU6050 Node (Back)
+  const crashNode = makeSensorNode(0xff3366);
+  crashNode.position.set(0, 0, -1.38);
+  crashNode.rotation.x = -Math.PI / 2;
+  helmetGroup.add(crashNode);
+  const crashLbl = makeTextSprite('IMU/CRASH', '#ff3366');
+  crashLbl.position.set(0, 0, -1.6); helmetGroup.add(crashLbl);
+  sensorMeshes.crash = crashNode;
+
+  // Drowsiness Node (Inside Visor Edge)
+  const drowsyNode = makeSensorNode(0xff6600);
+  drowsyNode.position.set(0.6, 0.2, 1.15);
+  drowsyNode.rotation.x = Math.PI / 2;
+  drowsyNode.rotation.z = Math.PI / 4;
+  helmetGroup.add(drowsyNode);
+  const drowsyLbl = makeTextSprite('EYE TRACK', '#ff6600');
+  drowsyLbl.position.set(0.9, 0.2, 1.4); helmetGroup.add(drowsyLbl);
+  sensorMeshes.drowsy = drowsyNode;
+
+  // Alcohol Node (Chin Guard)
+  const alcNode = makeSensorNode(0xff3366);
+  alcNode.position.set(0, -0.85, 1.35);
+  alcNode.rotation.x = Math.PI / 2;
+  helmetGroup.add(alcNode);
+  const alcLbl = makeTextSprite('MQ-3', '#ff3366');
+  alcLbl.position.set(0, -1.1, 1.6); helmetGroup.add(alcLbl);
+  sensorMeshes.alcohol = alcNode;
+
+  // Helmet Detection (Bottom Rim)
+  const wearNode = makeSensorNode(0x00ff88);
+  wearNode.position.set(-0.8, -0.9, 0);
+  wearNode.rotation.z = Math.PI / 2;
+  helmetGroup.add(wearNode);
+  const wearLbl = makeTextSprite('IR PROXIMITY', '#00ff88');
+  wearLbl.position.set(-1.1, -1.1, 0); helmetGroup.add(wearLbl);
+  sensorMeshes.helmet = wearNode;
+
+  // ESP32 MCU Node (Back)
+  const espGroup = new THREE.Group();
+  const pcbGeo = new THREE.BoxGeometry(0.25, 0.05, 0.35);
+  const pcbMat = new THREE.MeshPhongMaterial({ color: 0x111111 });
+  const pcb = new THREE.Mesh(pcbGeo, pcbMat);
+  espGroup.add(pcb);
+  
+  const shieldGeo = new THREE.BoxGeometry(0.18, 0.06, 0.2);
+  const shieldMat = new THREE.MeshStandardMaterial({ color: 0xa0aab5, metalness: 0.8, roughness: 0.3 });
+  const shield = new THREE.Mesh(shieldGeo, shieldMat);
+  shield.position.set(0, 0.02, -0.05);
+  espGroup.add(shield);
+  
+  const espLedGeo = new THREE.BoxGeometry(0.03, 0.03, 0.03);
+  const espLedMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.8 });
+  const espLed = new THREE.Mesh(espLedGeo, espLedMat);
+  espLed.position.set(0.08, 0.03, 0.12);
+  espGroup.add(espLed);
+
+  const espCanvas = document.createElement('canvas');
+  espCanvas.width = 64; espCanvas.height = 64;
+  const espCtx = espCanvas.getContext('2d');
+  const espGrad = espCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  espGrad.addColorStop(0, '#00ff88');
+  espGrad.addColorStop(1, 'transparent');
+  espCtx.fillStyle = espGrad;
+  espCtx.fillRect(0,0,64,64);
+  const espGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(espCanvas), transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false }));
+  espGlow.scale.set(0.8, 0.8, 1);
+  espGlow.position.set(0.08, 0.1, 0.12);
+  espGroup.add(espGlow);
+
+  espGroup.position.set(0, -0.4, -1.2);
+  espGroup.rotation.x = -Math.PI / 4;
+  helmetGroup.add(espGroup);
+
+  const espLbl = makeTextSprite('ESP32 MCU', '#00ff88');
+  espLbl.position.set(0, -0.15, -1.5);
+  helmetGroup.add(espLbl);
+  
+  // Save reference for animation
+  animObjects.espLed = espLed;
+  animObjects.espGlow = espGlow;
+
+  // Scale and adjust group
+  helmetGroup.scale.set(0.9, 1.0, 1.05);
+  helmetGroup.position.y = 0.2;
+  helmetScene.add(helmetGroup);
+
+  // ===== Animation loop =====
+  let clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    helmetControls.update();
+    const t = clock.getElapsedTime();
+
+    if (animObjects.espLed) {
+      const p = 0.5 + Math.sin(t * 4) * 0.5;
+      animObjects.espLed.material.opacity = 0.4 + p * 0.6;
+      animObjects.espGlow.material.opacity = 0.2 + p * 0.6;
+    }
+
+    // Smoothly animate visor rotation
+    if (visorMeshRef) {
+      currentVisorAngle += (targetVisorAngle - currentVisorAngle) * 0.1;
+      visorMeshRef.rotation.x = currentVisorAngle;
+    }
+
+    // Pulse active sensor glows
+    for (const key in sensorMeshes) {
+      const sensor = sensorMeshes[key];
+      if (toggleStates[key]) {
+        const pulse = 0.4 + Math.sin(t * 8) * 0.6;
+        sensor.userData.glow.material.opacity = pulse;
+        sensor.userData.led.material.opacity = 0.5 + pulse * 0.5;
+      } else {
+        sensor.userData.glow.material.opacity = 0;
+        sensor.userData.led.material.opacity = 0.1;
+      }
+    }
+
+    // MPU Axes shake effect for crash
+    if (toggleStates.crash) {
+      helmetGroup.position.x = (Math.random() - 0.5) * 0.05;
+      helmetGroup.position.y = 0.2 + (Math.random() - 0.5) * 0.05;
+    } else {
+      helmetGroup.position.x = 0;
+      helmetGroup.position.y = 0.2;
+    }
+
+    // GPS & GSM Pulse Rings (expanding waves)
+    [...gpsPulseRings, ...gsmPulseRings].forEach(ring => {
+      ring.scale.x += 0.03; ring.scale.y += 0.03; ring.scale.z += 0.03;
+      ring.material.opacity -= 0.015;
+      if (ring.material.opacity <= 0) {
+        helmetScene.remove(ring);
+        ring.geometry.dispose(); ring.material.dispose();
+      }
+    });
+    gpsPulseRings = gpsPulseRings.filter(r => r.material.opacity > 0);
+    gsmPulseRings = gsmPulseRings.filter(r => r.material.opacity > 0);
+
+    helmetRenderer.render(helmetScene, helmetCamera);
+  }
+  animate();
+}
+
+let helmetIntervals = {};
+
+// Activate/deactivate a sensor's glow explicitly
+function setSensorGlow(key, on) {
+  // Handled automatically in animate() loop now
+}
+
+let cutawayEnabled = false;
+window.toggleCutaway = function() {
+  cutawayEnabled = !cutawayEnabled;
+  const btn = document.getElementById('tog-cutaway');
+  if(cutawayEnabled) {
+    btn.classList.add('active');
+    clipPlane.constant = 0; // Slice in half along X
+  } else {
+    btn.classList.remove('active');
+    clipPlane.constant = 20; // Remove slice
+  }
+}
+
+window.toggleVisor = function() {
+  visorOpen = !visorOpen;
+  const btn = document.getElementById('tog-visor');
+  if(visorOpen) {
+    btn.classList.add('active');
+    targetVisorAngle = Math.PI / 2.5; // Open angle upwards
+  } else {
+    btn.classList.remove('active');
+    targetVisorAngle = 0; // Closed angle
+  }
+}
+
+function toggle3D(key) {
+  if (!helmet3DInitialized) initHelmet3D();
+  toggleStates[key] = !toggleStates[key];
+  const btn = document.getElementById('tog-' + key);
+  if(btn) btn.classList.toggle('active', toggleStates[key]);
+
+  if (helmetIntervals[key]) { clearInterval(helmetIntervals[key]); helmetIntervals[key] = null; }
+
+  switch(key) {
+    case 'helmet':
+      if (toggleStates.helmet) {
+        domeMesh.material.emissive.setHex(0x002211);
+        domeMesh.material.emissiveIntensity = 0.6;
+        document.getElementById('stat-helmet').textContent = 'Worn';
+        document.getElementById('stat-helmet').style.color = '#00ff88';
+      } else {
+        domeMesh.material.emissive.setHex(0x000000);
+        document.getElementById('stat-helmet').textContent = 'Not Worn';
+        document.getElementById('stat-helmet').style.color = 'var(--text-dim)';
+      }
+      break;
+
+    case 'alcohol':
+      if (toggleStates.alcohol) {
+        animateAlcoholStat(true);
+      } else {
+        animateAlcoholStat(false);
+      }
+      break;
+
+    case 'drowsy':
+      const eyelid = document.getElementById('eyelidTop');
+      const alertEl = document.getElementById('drowsyAlert');
+      if (toggleStates.drowsy) {
+        if(eyelid) eyelid.classList.add('closing');
+        if(alertEl) alertEl.classList.add('active');
+        document.getElementById('stat-drowsy').textContent = 'Drowsy ⚠';
+        document.getElementById('stat-drowsy').style.color = '#ff6600';
+      } else {
+        if(eyelid) eyelid.classList.remove('closing');
+        if(alertEl) alertEl.classList.remove('active');
+        document.getElementById('stat-drowsy').textContent = 'Alert';
+        document.getElementById('stat-drowsy').style.color = '#00ff88';
+      }
+      break;
+
+    case 'gps':
+      if (toggleStates.gps) {
+        helmetIntervals.gps = setInterval(() => {
+          const ringGeo = new THREE.TorusGeometry(1.5, 0.02, 8, 48);
+          const ringMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 });
+          const ring = new THREE.Mesh(ringGeo, ringMat);
+          ring.rotation.x = Math.PI / 2;
+          ring.position.copy(sensorMeshes.gps.position);
+          ring.position.y += 0.05;
+          ring.scale.set(0.1, 0.1, 0.1);
+          helmetGroup.add(ring);
+          gpsPulseRings.push(ring);
+        }, 800);
+        document.getElementById('stat-gps').textContent = 'Active ✓';
+        document.getElementById('stat-gps').style.color = '#00e5ff';
+      } else {
+        document.getElementById('stat-gps').textContent = 'Inactive';
+        document.getElementById('stat-gps').style.color = 'var(--text-dim)';
+      }
+      break;
+
+    case 'gsm':
+      if (toggleStates.gsm) {
+        helmetIntervals.gsm = setInterval(() => {
+          const ringGeo = new THREE.TorusGeometry(1.2, 0.02, 8, 32);
+          const ringMat = new THREE.MeshBasicMaterial({ color: 0xffd600, transparent: true, opacity: 0.8 });
+          const ring = new THREE.Mesh(ringGeo, ringMat);
+          ring.rotation.x = Math.PI / 2;
+          ring.position.copy(sensorMeshes.gsm.position);
+          ring.position.y += 0.05;
+          ring.scale.set(0.1, 0.1, 0.1);
+          helmetGroup.add(ring);
+          gsmPulseRings.push(ring);
+        }, 600);
+      }
+      break;
+
+    case 'crash':
+      // Handled in animate loop via position shake
+      break;
+  }
+}
+
+let alcoholAnimFrame = null;
+function animateAlcoholStat(on) {
+  const el = document.getElementById('stat-alcohol');
+  if (alcoholAnimFrame) cancelAnimationFrame(alcoholAnimFrame);
+  let current = parseFloat(el.textContent) || 0;
+  const target = on ? 0.08 : 0;
+  function step() {
+    current += (target - current) * 0.05;
+    if (Math.abs(current - target) < 0.001) current = target;
+    el.innerHTML = current.toFixed(2) + ' <small>BrAC</small>';
+    el.style.color = current > 0.03 ? '#ff3366' : '#00ff88';
+    if (current !== target) alcoholAnimFrame = requestAnimationFrame(step);
+  }
+  step();
+}
+
+/* ============================================
+   INIT
+   ============================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  const hash = location.hash.slice(1) || 'overview';
+  // Delay navigation until after loading screen
+  setTimeout(() => { navigateTo(hash); }, 2600);
+});
+</script>
+</body>
+</html>
