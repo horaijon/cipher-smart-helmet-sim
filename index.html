@@ -1179,10 +1179,16 @@ body::after {
     <h2 class="section-title" style="text-align:center;margin-bottom:24px;">Interactive 3D Helmet Model</h2>
     <div class="helmet3d-section">
       <div class="helmet3d-wrapper">
-        <div class="helmet-canvas-wrap glass-panel" id="canvas-container" style="padding:0;">
+        <div class="helmet-canvas-wrap glass-panel" id="canvas-container" style="padding:0; position:relative;">
           <canvas id="helmetCanvas"></canvas>
-          <div class="canvas-label">Drag to rotate · Scroll to zoom</div>
+          <div class="canvas-label" style="display:flex; align-items:center; justify-content:center; gap: 12px; pointer-events:auto;">
+            Drag to rotate · Scroll to zoom
+            <div class="action-btn" id="tog-cutaway" onclick="toggleCutaway()" title="Cutaway View" style="padding: 0; border-radius: 50%; width: 34px; height: 34px; justify-content:center; box-sizing:border-box;">
+              <span class="icon" style="margin:0;">✂️</span>
+            </div>
+          </div>
         </div>
+        
         <div class="helmet-controls-wrap">
           <!-- Toggles -->
           <div class="glass-panel">
@@ -1194,38 +1200,37 @@ body::after {
               <div class="toggle-btn" id="tog-gps" onclick="toggle3D('gps')"><div class="toggle-icon">📡</div><div class="toggle-switch"></div><div class="toggle-label">GPS Module</div></div>
               <div class="toggle-btn" id="tog-gsm" onclick="toggle3D('gsm')"><div class="toggle-icon">📱</div><div class="toggle-switch"></div><div class="toggle-label">GSM Module</div></div>
               <div class="toggle-btn" id="tog-crash" onclick="toggle3D('crash')"><div class="toggle-icon">💥</div><div class="toggle-switch"></div><div class="toggle-label">Crash Detection</div></div>
-              <div class="toggle-btn" id="tog-visor" onclick="toggleVisor()"><div class="toggle-icon">🥽</div><div class="toggle-switch"></div><div class="toggle-label">Open Visor</div></div>
-              <div class="toggle-btn" id="tog-cutaway" onclick="toggleCutaway()"><div class="toggle-icon">✂️</div><div class="toggle-switch"></div><div class="toggle-label">Cutaway View</div></div>
             </div>
           </div>
 
-          <!-- Drowsiness Eye -->
-          <div class="drowsy-section glass-panel" id="drowsySection">
-            <div class="hud-panel-title"><span class="icon">👁️</span> Drowsiness Monitor</div>
-            <div class="eye-graphic-wrap">
-              <svg class="eye-svg" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
-                <!-- Eye white -->
-                <ellipse cx="60" cy="30" rx="45" ry="22" fill="rgba(255,255,255,0.08)" stroke="var(--cyan)" stroke-width="1.5"/>
-                <!-- Iris -->
-                <circle cx="60" cy="30" r="14" fill="rgba(0,229,255,0.15)" stroke="var(--cyan)" stroke-width="1.5"/>
-                <!-- Pupil -->
-                <circle cx="60" cy="30" r="6" fill="var(--cyan)" id="eyePupil"/>
-                <!-- Eyelid -->
-                <ellipse class="eyelid-top" id="eyelidTop" cx="60" cy="10" rx="46" ry="12" fill="var(--bg-primary)" stroke="var(--cyan)" stroke-width="1.5"/>
-              </svg>
-              <div class="drowsy-alert-banner" id="drowsyAlert">🚨 DROWSINESS DETECTED — Alert Sent to Rider</div>
-            </div>
-          </div>
+        </div>
 
-          <!-- Stats Dashboard -->
-          <div class="glass-panel">
-            <div class="hud-panel-title"><span class="icon">📊</span> Live Stats</div>
-            <div class="stats-dashboard">
-              <div class="stat-card"><div class="stat-card-label">Helmet Status</div><div class="stat-card-value" id="stat-helmet" style="color:var(--text-dim);">Not Worn</div><div class="stat-card-sub">IR Sensor</div></div>
-              <div class="stat-card"><div class="stat-card-label">Alcohol Level</div><div class="stat-card-value" id="stat-alcohol" style="color:var(--neon-green);">0.00 <small>BrAC</small></div><div class="stat-card-sub">MQ-3 Sensor</div></div>
-              <div class="stat-card"><div class="stat-card-label">Drowsiness</div><div class="stat-card-value" id="stat-drowsy" style="color:var(--neon-green);">Alert</div><div class="stat-card-sub">Eye Blink Rate</div></div>
-              <div class="stat-card"><div class="stat-card-label">GPS Signal</div><div class="stat-card-value" id="stat-gps" style="color:var(--text-dim);">Inactive</div><div class="stat-card-sub">NEO-6M</div></div>
-            </div>
+        <!-- Bottom Left: Live Stats -->
+        <div class="glass-panel">
+          <div class="hud-panel-title"><span class="icon">📊</span> Live Stats</div>
+          <div class="stats-dashboard">
+            <div class="stat-card"><div class="stat-card-label">Helmet Status</div><div class="stat-card-value" id="stat-helmet" style="color:var(--text-dim);">Not Worn</div><div class="stat-card-sub">IR Sensor</div></div>
+            <div class="stat-card"><div class="stat-card-label">Alcohol Level</div><div class="stat-card-value" id="stat-alcohol" style="color:var(--neon-green);">0.00 <small>BrAC</small></div><div class="stat-card-sub">MQ-3 Sensor</div></div>
+            <div class="stat-card"><div class="stat-card-label">Drowsiness</div><div class="stat-card-value" id="stat-drowsy" style="color:var(--neon-green);">Alert</div><div class="stat-card-sub">Eye Blink Rate</div></div>
+            <div class="stat-card"><div class="stat-card-label">GPS Signal</div><div class="stat-card-value" id="stat-gps" style="color:var(--text-dim);">Inactive</div><div class="stat-card-sub">NEO-6M</div></div>
+          </div>
+        </div>
+
+        <!-- Bottom Right: Drowsiness Monitor -->
+        <div class="drowsy-section glass-panel" id="drowsySection">
+          <div class="hud-panel-title"><span class="icon">👁️</span> Drowsiness Monitor</div>
+          <div class="eye-graphic-wrap">
+            <svg class="eye-svg" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
+              <!-- Eye white -->
+              <ellipse cx="60" cy="30" rx="45" ry="22" fill="rgba(255,255,255,0.08)" stroke="var(--cyan)" stroke-width="1.5"/>
+              <!-- Iris -->
+              <circle cx="60" cy="30" r="14" fill="rgba(0,229,255,0.15)" stroke="var(--cyan)" stroke-width="1.5"/>
+              <!-- Pupil -->
+              <circle cx="60" cy="30" r="6" fill="var(--cyan)" id="eyePupil"/>
+              <!-- Eyelid -->
+              <ellipse class="eyelid-top" id="eyelidTop" cx="60" cy="10" rx="46" ry="12" fill="var(--bg-primary)" stroke="var(--cyan)" stroke-width="1.5"/>
+            </svg>
+            <div class="drowsy-alert-banner" id="drowsyAlert">🚨 DROWSINESS DETECTED — Alert Sent to Rider</div>
           </div>
         </div>
       </div>
@@ -1349,6 +1354,33 @@ body::after {
 </footer>
 
 <!-- ========== JAVASCRIPT ========== -->
+<style>
+/* Floating Action Buttons */
+.action-btn {
+  background: rgba(20, 20, 25, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.action-btn.active {
+  background: var(--primary-cyan);
+  color: #000;
+  border-color: var(--primary-cyan);
+  box-shadow: 0 0 10px var(--primary-cyan);
+}
+</style>
 <script>
 /* ============================================
    LOADING SCREEN
@@ -1788,22 +1820,67 @@ function initHelmet3D() {
     // This perfectly aligns the front face opening with the Eye Track & Alcohol sensors!
     loadedHelmet.rotation.y = Math.PI;
     
-    // Override materials to a sleek gray aesthetic and enable clipping
+    // Override materials: Crimson Red shell and visor
     loadedHelmet.traverse((child) => {
       if (child.name === 'Cover') {
         visorMeshRef = child;
-      }
-      if (child.isMesh) {
+        if (child.isMesh) {
+          child.material = new THREE.MeshStandardMaterial({
+            color: 0x9c1807, // Crimson red visor
+            roughness: 0.1,
+            metalness: 0.8,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide,
+            clippingPlanes: [clipPlane],
+            clipShadows: true
+          });
+        }
+      } else if (child.isMesh) {
         child.material = new THREE.MeshStandardMaterial({
-          color: 0x999999, // Visible, premium sleek gray
+          color: 0x9c1807, // Crimson red shell
           roughness: 0.35,
           metalness: 0.5,
+          transparent: true,
+          opacity: 0.3, // Starts ghosted until toggled on
           side: THREE.DoubleSide,
           clippingPlanes: [clipPlane],
           clipShadows: true
         });
       }
     });
+
+    // Fix Visor Pivot Point so it rotates correctly on its hinges
+    if (visorMeshRef) {
+      visorMeshRef.geometry.computeBoundingBox();
+      const vBox = visorMeshRef.geometry.boundingBox;
+      
+      const pivotY = vBox.min.y + (vBox.max.y - vBox.min.y) * 0.15;
+      const pivotZ = vBox.max.z - (vBox.max.z - vBox.min.z) * 0.15;
+
+      const pivotGroup = new THREE.Group();
+      visorMeshRef.parent.add(pivotGroup);
+      
+      // Copy exact transform to pivot group
+      pivotGroup.position.copy(visorMeshRef.position);
+      pivotGroup.rotation.copy(visorMeshRef.rotation);
+      pivotGroup.scale.copy(visorMeshRef.scale);
+      
+      // Save initial rotation so we don't overwrite it when animating
+      pivotGroup.userData.initialRotationX = pivotGroup.rotation.x;
+
+      // Offset group to hinge location
+      pivotGroup.translateY(pivotY);
+      pivotGroup.translateZ(pivotZ);
+
+      // Add mesh to group and reverse the offset
+      pivotGroup.add(visorMeshRef);
+      visorMeshRef.position.set(0, -pivotY, -pivotZ);
+      visorMeshRef.rotation.set(0, 0, 0);
+      visorMeshRef.scale.set(1, 1, 1);
+      
+      animObjects.visorPivot = pivotGroup;
+    }
 
     helmetGroup.add(loadedHelmet);
   }, 
@@ -1844,14 +1921,13 @@ function initHelmet3D() {
   crashLbl.position.set(0, 0, -1.6); helmetGroup.add(crashLbl);
   sensorMeshes.crash = crashNode;
 
-  // Drowsiness Node (Inside Visor Edge)
+  // Drowsiness Node (Inside Visor Edge - Top Center)
   const drowsyNode = makeSensorNode(0xff6600);
-  drowsyNode.position.set(0.6, 0.2, 1.15);
-  drowsyNode.rotation.x = Math.PI / 2;
-  drowsyNode.rotation.z = Math.PI / 4;
+  drowsyNode.position.set(0, 0.45, 1.1); // Placed at top inner rim
+  drowsyNode.rotation.x = Math.PI / 2 + 0.2; // Pointed slightly downwards
   helmetGroup.add(drowsyNode);
   const drowsyLbl = makeTextSprite('EYE TRACK', '#ff6600');
-  drowsyLbl.position.set(0.9, 0.2, 1.4); helmetGroup.add(drowsyLbl);
+  drowsyLbl.position.set(0.3, 0.5, 1.25); helmetGroup.add(drowsyLbl);
   sensorMeshes.drowsy = drowsyNode;
 
   // Alcohol Node (Chin Guard)
@@ -1863,13 +1939,13 @@ function initHelmet3D() {
   alcLbl.position.set(0, -1.1, 1.6); helmetGroup.add(alcLbl);
   sensorMeshes.alcohol = alcNode;
 
-  // Helmet Detection (Bottom Rim)
+  // Helmet Detection (Top Inner Padding)
   const wearNode = makeSensorNode(0x00ff88);
-  wearNode.position.set(-0.8, -0.9, 0);
-  wearNode.rotation.z = Math.PI / 2;
+  wearNode.position.set(0, 1.1, -0.2); // Sits on top inner padding
+  wearNode.rotation.x = Math.PI / 2;
   helmetGroup.add(wearNode);
   const wearLbl = makeTextSprite('IR PROXIMITY', '#00ff88');
-  wearLbl.position.set(-1.1, -1.1, 0); helmetGroup.add(wearLbl);
+  wearLbl.position.set(0, 0.9, -0.2); helmetGroup.add(wearLbl);
   sensorMeshes.helmet = wearNode;
 
   // ESP32 MCU Node (Back)
@@ -1934,10 +2010,22 @@ function initHelmet3D() {
       animObjects.espGlow.material.opacity = 0.2 + p * 0.6;
     }
 
-    // Smoothly animate visor rotation
-    if (visorMeshRef) {
+    // Smoothly animate visor rotation around correct pivot
+    if (animObjects.visorPivot) {
       currentVisorAngle += (targetVisorAngle - currentVisorAngle) * 0.1;
-      visorMeshRef.rotation.x = currentVisorAngle;
+      animObjects.visorPivot.rotation.x = animObjects.visorPivot.userData.initialRotationX + currentVisorAngle;
+    }
+
+    // Helmet ghosting effect based on Helmet Detection toggle
+    if (helmetGroup) {
+      helmetGroup.traverse((child) => {
+        if (child.isMesh && child.material) {
+          // Visor max opacity is 0.85, shell max is 1.0
+          const maxOp = (child.name === 'Cover') ? 0.85 : 1.0;
+          const targetOp = toggleStates['helmet'] ? maxOp : 0.25;
+          child.material.opacity += (targetOp - child.material.opacity) * 0.1;
+        }
+      });
     }
 
     // Pulse active sensor glows
@@ -1963,16 +2051,26 @@ function initHelmet3D() {
     }
 
     // GPS & GSM Pulse Rings (expanding waves)
+    const maxWaveScale = 5.0; // The large distance they cover before disappearing
     [...gpsPulseRings, ...gsmPulseRings].forEach(ring => {
-      ring.scale.x += 0.03; ring.scale.y += 0.03; ring.scale.z += 0.03;
-      ring.material.opacity -= 0.015;
-      if (ring.material.opacity <= 0) {
-        helmetScene.remove(ring);
-        ring.geometry.dispose(); ring.material.dispose();
+      // Slow, graceful expansion
+      ring.scale.x += 0.015; ring.scale.y += 0.015; ring.scale.z += 0.015;
+      
+      // Math guaranteed fade: opacity goes from 0.5 to 0 as scale approaches maxWaveScale
+      const progress = ring.scale.x / maxWaveScale;
+      ring.material.opacity = Math.max(0, 0.5 * (1.0 - progress));
+      
+      // Force removal and invisibility when max size is reached
+      if (ring.scale.x >= maxWaveScale || ring.material.opacity <= 0) {
+        ring.visible = false; // Guaranteed to stop rendering
+        if (ring.parent) ring.parent.remove(ring);
+        ring.geometry.dispose(); 
+        ring.material.dispose();
       }
     });
-    gpsPulseRings = gpsPulseRings.filter(r => r.material.opacity > 0);
-    gsmPulseRings = gsmPulseRings.filter(r => r.material.opacity > 0);
+    
+    gpsPulseRings = gpsPulseRings.filter(r => r.visible);
+    gsmPulseRings = gsmPulseRings.filter(r => r.visible);
 
     helmetRenderer.render(helmetScene, helmetCamera);
   }
@@ -2004,7 +2102,7 @@ window.toggleVisor = function() {
   const btn = document.getElementById('tog-visor');
   if(visorOpen) {
     btn.classList.add('active');
-    targetVisorAngle = Math.PI / 2.5; // Open angle upwards
+    targetVisorAngle = Math.PI / 4.5; // Open angle upwards (moderate so it doesn't detach)
   } else {
     btn.classList.remove('active');
     targetVisorAngle = 0; // Closed angle
@@ -2022,12 +2120,9 @@ function toggle3D(key) {
   switch(key) {
     case 'helmet':
       if (toggleStates.helmet) {
-        domeMesh.material.emissive.setHex(0x002211);
-        domeMesh.material.emissiveIntensity = 0.6;
         document.getElementById('stat-helmet').textContent = 'Worn';
         document.getElementById('stat-helmet').style.color = '#00ff88';
       } else {
-        domeMesh.material.emissive.setHex(0x000000);
         document.getElementById('stat-helmet').textContent = 'Not Worn';
         document.getElementById('stat-helmet').style.color = 'var(--text-dim)';
       }
@@ -2059,9 +2154,13 @@ function toggle3D(key) {
 
     case 'gps':
       if (toggleStates.gps) {
+        let pulseCount = 0;
         helmetIntervals.gps = setInterval(() => {
           const ringGeo = new THREE.TorusGeometry(1.5, 0.02, 8, 48);
-          const ringMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 });
+          const ringMat = new THREE.MeshBasicMaterial({ 
+            color: 0x00e5ff, transparent: true, opacity: 0.5, 
+            blending: THREE.AdditiveBlending, depthWrite: false 
+          });
           const ring = new THREE.Mesh(ringGeo, ringMat);
           ring.rotation.x = Math.PI / 2;
           ring.position.copy(sensorMeshes.gps.position);
@@ -2069,6 +2168,12 @@ function toggle3D(key) {
           ring.scale.set(0.1, 0.1, 0.1);
           helmetGroup.add(ring);
           gpsPulseRings.push(ring);
+          
+          pulseCount++;
+          if (pulseCount >= 4) {
+            clearInterval(helmetIntervals.gps);
+            helmetIntervals.gps = null;
+          }
         }, 800);
         document.getElementById('stat-gps').textContent = 'Active ✓';
         document.getElementById('stat-gps').style.color = '#00e5ff';
@@ -2080,9 +2185,13 @@ function toggle3D(key) {
 
     case 'gsm':
       if (toggleStates.gsm) {
+        let pulseCount = 0;
         helmetIntervals.gsm = setInterval(() => {
           const ringGeo = new THREE.TorusGeometry(1.2, 0.02, 8, 32);
-          const ringMat = new THREE.MeshBasicMaterial({ color: 0xffd600, transparent: true, opacity: 0.8 });
+          const ringMat = new THREE.MeshBasicMaterial({ 
+            color: 0xffd600, transparent: true, opacity: 0.5, 
+            blending: THREE.AdditiveBlending, depthWrite: false 
+          });
           const ring = new THREE.Mesh(ringGeo, ringMat);
           ring.rotation.x = Math.PI / 2;
           ring.position.copy(sensorMeshes.gsm.position);
@@ -2090,6 +2199,12 @@ function toggle3D(key) {
           ring.scale.set(0.1, 0.1, 0.1);
           helmetGroup.add(ring);
           gsmPulseRings.push(ring);
+          
+          pulseCount++;
+          if (pulseCount >= 5) {
+            clearInterval(helmetIntervals.gsm);
+            helmetIntervals.gsm = null;
+          }
         }, 600);
       }
       break;
