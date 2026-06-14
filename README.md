@@ -1,2 +1,2 @@
-# cipher-smart-helmet-sim
-basic simulation of a smart helmet.
+# Basic smart helmet simulation
+made with the help of google antigravity
